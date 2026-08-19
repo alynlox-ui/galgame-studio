@@ -1402,6 +1402,13 @@ function initEditorEvents(){
   $('#btnSample').onclick=()=>{if(confirm('载入示例项目将替换当前内容。继续？')){project=migrateProject(sampleProject());selectedSceneId=project.startScene;renderAll();saveEditor();toast('已载入示例');}};
   $('#btnPlay').onclick=()=>openPlayer(project);
   $('#btnCharModule').onclick=()=>{project.characters=project.characters||[];selectedCharId=selectedCharId||((project.characters&&project.characters[0]&&project.characters[0].id)||null);renderCharModule();$('#charModal').classList.remove('hidden');};
+  $('#btnCharAdd').onclick=()=>{
+    project.characters=project.characters||[];
+    const c={id:uid('lib'),name:'新人物'+(project.characters.length+1),baseImage:'',originalImage:'',actions:[{id:uid('act'),name:'待机',image:'',anim:'idle',speed:1}],live2d:false};
+    project.characters.push(c);
+    selectedCharId=c.id;
+    renderCharModule();saveEditor();toast('已新建人物');
+  };
   $('#btnCharModuleClose').onclick=()=>{$('#charModal').classList.add('hidden');saveEditor();};
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
