@@ -135,6 +135,40 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 .dp-row input[type=range]{width:100%}
 .dp-val{float:right;color:#FB7299;font-family:Consolas,monospace;font-size:12px}
 .dp-btns{display:flex;gap:6px;flex-wrap:wrap}
+/* ===== 人物模块 ===== */
+.char-module{display:flex;gap:14px;min-height:440px}
+.char-lib-list{width:210px;flex:none;border-right:1px solid #E3E5E7;padding-right:12px;overflow-y:auto}
+.char-lib-item{display:flex;align-items:center;gap:6px;background:#FFFFFF;border:1px solid #E3E5E7;border-radius:9px;padding:8px 10px;margin-bottom:6px;cursor:pointer;font-size:13px}
+.char-lib-item:hover{border-color:#FB7299}
+.char-lib-item.selected{border-color:#FB7299;background:#FFF0F4}
+.char-lib-item .cn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.char-lib-edit{flex:1;overflow-y:auto;padding-right:4px}
+.char-cut-box{background:#F4F5F7;border:1px solid #E3E5E7;border-radius:10px;padding:10px;margin-bottom:10px}
+#charCutCanvas{max-width:100%;max-height:280px;display:block;margin:0 auto;background:repeating-conic-gradient(#eee 0% 25%,#fff 0% 50%) 0 0/20px 20px;border:1px solid #E3E5E7;border-radius:8px;cursor:crosshair}
+.cut-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#61666D}
+.cut-tools input[type=range]{width:120px}
+.color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #E3E5E7;display:inline-block}
+.act-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;background:#F4F5F7;border:1px solid #E3E5E7;border-radius:8px;padding:6px}
+.act-row input[type=text]{flex:1;min-width:70px}
+.act-row select{width:104px}
+.act-row input[type=range]{width:70px}
+/* ===== 动作 / 伪Live2D 动画 ===== */
+@keyframes chBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+@keyframes chBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes chShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
+@keyframes chEnterLeft{0%{opacity:0;transform:translateX(-90px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes chEnterRight{0%{opacity:0;transform:translateX(90px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes chFadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes chPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.char-anim{display:flex;align-items:flex-end;justify-content:center;transform-origin:50% 100%}
+.char-anim.anim-idle{animation:chBreath 3.2s ease-in-out infinite}
+.char-anim.anim-bounce{animation:chBounce 1.4s ease-in-out infinite}
+.char-anim.anim-shake{animation:chShake .5s ease-in-out infinite}
+.char-anim.anim-enter-left{animation:chEnterLeft .6s ease-out both}
+.char-anim.anim-enter-right{animation:chEnterRight .6s ease-out both}
+.char-anim.anim-fade-in{animation:chFadeIn .8s ease-out both}
+.char-anim.anim-pulse{animation:chPulse 1.6s ease-in-out infinite}
+.char-sprite.live2d img{transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s ease-out;transform-style:preserve-3d}
 </style>
 </head>
 <body>
@@ -146,6 +180,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <button id="btnNew">新建</button>
     <button id="btnSample">载入示例</button>
     <button id="btnFlags">⚙ 数值管理</button>
+    <button id="btnCharModule">🎭 人物模块</button>
     <button id="btnAutoLayout">自动布局</button>
     <span style="flex:1"></span>
     <button id="btnExport">导出 JSON</button>
@@ -235,6 +270,20 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     </div>
   </div>
 </div>
+<!-- 人物模块模态 -->
+<div id="charModal" class="modal hidden">
+  <div class="modal-box" style="width:min(880px,96vw)">
+    <h3>🎭 人物模块（立绘 / 抠图 / 动作设计 / 伪Live2D）</h3>
+    <div class="char-module">
+      <div class="char-lib-list">
+        <button id="btnCharAdd" class="mini primary" style="width:100%;margin-bottom:8px">＋ 新建人物</button>
+        <div id="charLibList"></div>
+      </div>
+      <div class="char-lib-edit" id="charLibEdit"></div>
+    </div>
+    <div class="modal-actions"><button id="btnCharModuleClose" class="primary">完成</button></div>
+  </div>
+</div>
 <!-- 数值管理模态 -->
 <div id="flagsModal" class="modal hidden">
   <div class="modal-box">
@@ -311,7 +360,7 @@ const editorSaveKey='gvn_editor_project_v1';
 function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#ffffff',bgImage:'',speaker:'',text:'',ending:null,setFlags:[],next:'',autoBranches:[],choices:[],characters:[]};}
 function newProject(){
   const s=defaultScene('开始场景',100,120);s.text='欢迎使用 Galgame 制作工坊！在右侧面板编辑这段文本，然后点击 ▶ 运行测试。';
-  project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},scenes:[s]};
+  project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},scenes:[s],characters:[]};
   selectedSceneId=s.id;
 }
 function sampleProject(){
@@ -349,7 +398,8 @@ function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlag
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
-  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;});});
+  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';});});
+  p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;});});
   const du={textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};
   p.ui=p.ui||{};
   Object.keys(du).forEach(k=>{p.ui[k]=Object.assign(du[k],p.ui[k]||{});});
@@ -360,7 +410,7 @@ function migrateProject(p){
 function saveEditor(){try{localStorage.setItem(editorSaveKey,JSON.stringify(project));}catch(e){}}
 function loadEditor(){
   try{const raw=localStorage.getItem(editorSaveKey);if(raw){project=migrateProject(JSON.parse(raw));selectedSceneId=project.startScene||(project.scenes[0]&&project.scenes[0].id)||null;return;}}catch(e){}
-  project=sampleProject();selectedSceneId=project.startScene;
+  project=migrateProject(sampleProject());selectedSceneId=project.startScene;
 }
 /* ---------------- 编辑器渲染 ---------------- */
 function renderAll(){renderSceneList();renderInspector();renderFlow();renderStartSel();}
@@ -535,6 +585,111 @@ function autoLayout(){
   const cols={};Object.keys(levels).forEach(id=>{const lv=levels[id];(cols[lv]=cols[lv]||[]).push(id);});
   Object.keys(cols).forEach(lv=>{cols[lv].forEach((id,i)=>{const sc=getScene(id);sc.x=60+lv*300;sc.y=80+i*140;});});
   renderFlow();saveEditor();toast('已自动布局');
+}
+/* ---------------- 人物模块（编辑器） ---------------- */
+let selectedCharId=null;
+let charCutImg=null,charCutColor=null,charCutTolerance=30;
+function getLibChar(id){return (project&&project.characters||[]).find(c=>c.id===id)||null;}
+function animOptions(sel){
+  const list=[['idle','待机呼吸'],['bounce','弹跳'],['shake','摇晃'],['enter-left','从左进入'],['enter-right','从右进入'],['fade-in','淡入'],['pulse','心跳缩放'],['none','无']];
+  return list.map(a=>`<option value="${a[0]}" ${sel===a[0]?'selected':''}>${a[1]}</option>`).join('');
+}
+function renderCharLibList(){
+  const box=$('#charLibList');if(!box)return;
+  box.innerHTML='';
+  (project.characters||[]).forEach(c=>{
+    const el=document.createElement('div');el.className='char-lib-item'+(c.id===selectedCharId?' selected':'');
+    el.innerHTML=`<span class="cn">${esc(c.name||'未命名')}</span><span class="hint">${(c.actions||[]).length}动作</span>`;
+    el.onclick=()=>{selectedCharId=c.id;renderCharLibList();renderCharEdit();};
+    box.appendChild(el);
+  });
+}
+function charEditHTML(c){
+  if(!c)return '<p class="hint">在左侧新建或选择一个人物。</p>';
+  const dotColor=charCutColor?('rgb('+charCutColor.r+','+charCutColor.g+','+charCutColor.b+')'):'#ccc';
+  const acts=(c.actions||[]).map((a,i)=>`<div class="act-row">
+    <input type="text" id="actName${i}" value="${esc(a.name)}" placeholder="动作名" style="width:70px">
+    <input type="text" id="actImg${i}" value="${esc(a.image)}" placeholder="图片URL（留空=基础图）" style="min-width:120px">
+    <select id="actAnim${i}">${animOptions(a.anim)}</select>
+    <input type="range" id="actSpeed${i}" min="0.2" max="3" step="0.1" value="${a.speed}" title="速度倍率">
+    <button class="mini danger" id="actDel${i}">✕</button>
+  </div>`).join('');
+  return `
+  <div class="insp-sec">
+    <h4>📌 基本信息 <span><button class="mini danger" id="charDelete">删除人物</button></span></h4>
+    <div class="insp-row"><label>人物名称</label><input type="text" id="charName" value="${esc(c.name)}"></div>
+    <div class="insp-row"><label>基础立绘</label>
+      <div class="dp-btns"><button id="charImgUpload" class="mini primary">📁 上传立绘</button><button id="charImgClear" class="mini danger">清除</button></div>
+      <div style="margin-top:6px"><input type="text" id="charImgUrl" value="${esc(c.baseImage)}" placeholder="或粘贴图片 URL" spellcheck="false"></div>
+      ${c.baseImage?`<img class="char-thumb" id="charThumb" src="${esc(c.baseImage)}" style="margin-top:6px">`:''}
+    </div>
+  </div>
+  <div class="insp-sec">
+    <h4>✂️ 抠图工具（色度键去背景）</h4>
+    ${c.baseImage?'<div class="char-cut-box"><canvas id="charCutCanvas"></canvas><div class="cut-tools"><span class="color-dot" id="cutColorDot" style="background:${dotColor}"></span><span>点击图片背景取色</span><label>容差 <input type="range" id="cutTolerance" min="0" max="100" value="${charCutTolerance}"></label><span id="cutTolVal">${charCutTolerance}</span><button id="cutApply" class="mini primary">应用抠图</button><button id="cutReset" class="mini">重置原图</button></div></div>':'<p class="hint">请先上传基础立绘。</p>'}
+  </div>
+  <div class="insp-sec">
+    <h4>🎬 动作设计</h4>
+    ${acts}
+    <button id="charAddAction" class="mini primary">＋ 添加动作</button>
+    <p class="hint">每个动作可指定一张图片（留空则使用基础图）和一种播放动画。在演示模式中可为场景角色切换动作。</p>
+  </div>
+  <div class="insp-sec">
+    <h4>🧬 伪Live2D</h4>
+    <label><input type="checkbox" id="charLive2d" ${c.live2d?'checked':''}> 启用（呼吸 + 鼠标视差倾斜，需透明立绘效果最佳）</label>
+  </div>`;
+}
+function renderCharEdit(){$('#charLibEdit').innerHTML=charEditHTML(getLibChar(selectedCharId));if($('#charModal').classList.contains('hidden'))return;bindCharEdit();}
+function renderCharModule(){renderCharLibList();renderCharEdit();}
+function bindCharEdit(){
+  const c=getLibChar(selectedCharId);if(!c)return;
+  const name=$('#charName');if(name)name.oninput=()=>{c.name=name.value;renderCharLibList();saveEditor();};
+  const url=$('#charImgUrl');if(url)url.oninput=()=>{c.baseImage=url.value.trim();c.originalImage=c.baseImage;charCutImg=null;renderCharEdit();saveEditor();};
+  const up=$('#charImgUpload');if(up)up.onclick=()=>openImageFile(data=>{c.originalImage=data;c.baseImage=data;charCutImg=null;charCutColor=null;renderCharEdit();saveEditor();});
+  const cl=$('#charImgClear');if(cl)cl.onclick=()=>{c.originalImage='';c.baseImage='';charCutImg=null;charCutColor=null;renderCharEdit();saveEditor();};
+  const del=$('#charDelete');if(del)del.onclick=()=>{if(!confirm('删除该人物？场景中已绑定的角色会退回独立立绘。'))return;project.characters=project.characters.filter(x=>x.id!==c.id);if(selectedCharId===c.id)selectedCharId=(project.characters[0]&&project.characters[0].id)||null;renderCharModule();saveEditor();};
+  const canvas=$('#charCutCanvas');
+  if(canvas&&c.baseImage){
+    const img=new Image();
+    img.onload=()=>{charCutImg=img;canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0);};
+    img.src=c.baseImage;
+    canvas.onclick=e=>{
+      const rect=canvas.getBoundingClientRect();
+      const x=Math.max(0,Math.min(canvas.width-1,Math.round((e.clientX-rect.left)/rect.width*canvas.width)));
+      const y=Math.max(0,Math.min(canvas.height-1,Math.round((e.clientY-rect.top)/rect.height*canvas.height)));
+      const px=canvas.getContext('2d').getImageData(x,y,1,1).data;
+      charCutColor={r:px[0],g:px[1],b:px[2]};
+      const dot=$('#cutColorDot');if(dot)dot.style.background='rgb('+px[0]+','+px[1]+','+px[2]+')';
+    };
+  }
+  const tol=$('#cutTolerance');if(tol)valInput(tol,()=>{charCutTolerance=parseInt(tol.value,10)||0;const tv=$('#cutTolVal');if(tv)tv.textContent=charCutTolerance;});
+  const apply=$('#cutApply');if(apply)apply.onclick=()=>charCutApply(c);
+  const reset=$('#cutReset');if(reset)reset.onclick=()=>{c.baseImage=c.originalImage||c.baseImage;charCutImg=null;charCutColor=null;renderCharEdit();saveEditor();toast('已重置为原图');};
+  (c.actions||[]).forEach((a,i)=>{
+    const nm=$('#actName'+i);if(nm)nm.oninput=()=>{a.name=nm.value;saveEditor();};
+    const im=$('#actImg'+i);if(im)im.oninput=()=>{a.image=im.value.trim();saveEditor();};
+    const an=$('#actAnim'+i);if(an)an.onchange=()=>{a.anim=an.value;saveEditor();};
+    const sp=$('#actSpeed'+i);if(sp)sp.oninput=()=>{a.speed=parseFloat(sp.value)||1;saveEditor();};
+    const del2=$('#actDel'+i);if(del2)del2.onclick=()=>{c.actions.splice(i,1);renderCharEdit();saveEditor();};
+  });
+  const add=$('#charAddAction');if(add)add.onclick=()=>{c.actions.push({id:uid('act'),name:'动作'+(c.actions.length+1),image:'',anim:'idle',speed:1});renderCharEdit();saveEditor();};
+  const lv=$('#charLive2d');if(lv)lv.onchange=()=>{c.live2d=lv.checked;saveEditor();};
+}
+function valInput(el,fn){el.oninput=fn;}
+function charCutApply(c){
+  if(!charCutImg||!charCutColor){toast('请先在图上点击要抠除的背景颜色');return;}
+  const w=charCutImg.naturalWidth||charCutImg.width,h=charCutImg.naturalHeight||charCutImg.height;
+  const off=document.createElement('canvas');off.width=w;off.height=h;
+  const ctx=off.getContext('2d');ctx.drawImage(charCutImg,0,0,w,h);
+  const data=ctx.getImageData(0,0,w,h);const d=data.data;const tol=charCutTolerance*2.55;
+  for(let i=0;i<d.length;i+=4){
+    const dr=d[i]-charCutColor.r,dg=d[i+1]-charCutColor.g,db=d[i+2]-charCutColor.b;
+    if(Math.sqrt(dr*dr+dg*dg+db*db)<=tol)d[i+3]=0;
+  }
+  ctx.putImageData(data,0,0);
+  c.baseImage=off.toDataURL('image/png');
+  toast('抠图完成，已生成透明立绘');
+  renderCharEdit();saveEditor();
 }
 /* ---------------- 编辑器事件 ---------------- */
 function insertAtCursor(input,text){
@@ -808,21 +963,39 @@ function initUIDrag(){
     window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
   });
 }
+function getLibCharP(id){return (P.project&&P.project.characters||[]).find(c=>c.id===id)||null;}
+function getCharVisual(ch){
+  if(ch.charId){
+    const lib=getLibCharP(ch.charId);
+    if(lib){
+      const act=(lib.actions||[]).find(a=>a.id===ch.actionId)||(lib.actions&&lib.actions[0])||null;
+      return {name:lib.name,image:(act&&act.image)?act.image:lib.baseImage,anim:act?act.anim:'none',speed:act?act.speed:1,live2d:!!lib.live2d};
+    }
+  }
+  return {name:ch.name||'角色',image:ch.image||'',anim:'none',speed:1,live2d:false};
+}
 function renderCharacters(){
   const layer=$('#characterLayer');if(!layer)return;
   layer.innerHTML='';
   const sc=currentScene();if(!sc||!sc.characters||!sc.characters.length)return;
   sc.characters.forEach((ch,i)=>{
+    const vis=getCharVisual(ch);
     const div=document.createElement('div');div.className='char-sprite';
+    if(vis.live2d)div.classList.add('live2d');
     if(P.demoMode&&P.demoSelection&&P.demoSelection.type==='char'&&P.demoSelection.index===i)div.classList.add('selected');
     div.dataset.index=i;
     div.style.left=ch.x+'%';div.style.top=ch.y+'%';div.style.opacity=(ch.opacity??1);
     const h=(55*ch.scale).toFixed(1);
-    if(ch.image){
-      const img=document.createElement('img');img.src=ch.image;img.alt=ch.name||'';img.draggable=false;img.style.height=h+'vh';div.appendChild(img);
+    const inner=document.createElement('div');inner.className='char-anim';
+    if(vis.anim&&vis.anim!=='none')inner.classList.add('anim-'+vis.anim);
+    inner.style.height=h+'vh';
+    if(vis.image){
+      const img=document.createElement('img');img.src=vis.image;img.alt=vis.name;img.draggable=false;img.style.height='100%';inner.appendChild(img);
     }else{
-      const ph=document.createElement('div');ph.className='char-placeholder';ph.style.height=h+'vh';ph.style.width=(h*0.75)+'vh';ph.textContent=ch.name||'角色';div.appendChild(ph);
+      inner.style.width=(h*0.75)+'vh';
+      const ph=document.createElement('div');ph.className='char-placeholder';ph.style.width='100%';ph.style.height='100%';ph.textContent=vis.name;inner.appendChild(ph);
     }
+    div.appendChild(inner);
     if(P.demoMode){
       div.addEventListener('click',e=>{e.stopPropagation();selectDemoCharacter(i);});
       div.addEventListener('pointerdown',e=>{
@@ -873,10 +1046,18 @@ function demoPanelHTML(){
   }
   if(sel.type==='char'){
     const i=sel.index;const ch=sc.characters[i];if(!ch)return '<p class="hint">角色不存在。</p>';
-    return `<div class="dp-sec"><h4>🎭 角色 ${i+1}</h4>
-      <div class="dp-row"><label>名称</label><input type="text" id="dpChName" value="${esc(ch.name)}"></div>
+    const libs=P.project.characters||[];
+    const lib=ch.charId?getLibCharP(ch.charId):null;
+    const libOpts='<option value="">（独立角色，不绑定）</option>'+libs.map(c=>`<option value="${esc(c.id)}" ${ch.charId===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
+    const actOpts=(lib&&lib.actions&&lib.actions.length)?lib.actions.map(a=>`<option value="${esc(a.id)}" ${ch.actionId===a.id?'selected':''}>${esc(a.name)}</option>`).join(''):'<option value="">（无动作）</option>';
+    const bindBlock=ch.charId?`<div class="dp-row"><label>动作</label><select id="dpChAct">${actOpts}</select></div><p class="hint">图片、抠图、动作、Live2D 请在编辑器「🎭 人物模块」中修改。</p>`
+      :`<div class="dp-row"><label>名称</label><input type="text" id="dpChName" value="${esc(ch.name)}"></div>
       <div class="dp-row"><label>立绘图片 URL</label><input type="text" id="dpChImage" value="${esc(ch.image)}" placeholder="可粘贴图片地址" spellcheck="false"></div>
-      <div class="dp-btns"><button id="dpChUpload" class="mini primary">📁 上传立绘</button><button id="dpChDelete" class="mini danger">删除角色</button></div>
+      <div class="dp-btns"><button id="dpChUpload" class="mini primary">📁 上传立绘</button></div>`;
+    return `<div class="dp-sec"><h4>🎭 角色 ${i+1}</h4>
+      <div class="dp-row"><label>人物库绑定</label><select id="dpChLib">${libOpts}</select></div>
+      ${bindBlock}
+      <div class="dp-btns" style="margin-top:4px"><button id="dpChDelete" class="mini danger">删除角色</button></div>
       <div class="dp-row"><label>水平位置 X <span class="dp-val" id="dpChXVal">${ch.x}</span></label><input type="range" id="dpChX" min="0" max="100" step="0.5" value="${ch.x}"></div>
       <div class="dp-row"><label>垂直位置 Y <span class="dp-val" id="dpChYVal">${ch.y}</span></label><input type="range" id="dpChY" min="0" max="100" step="0.5" value="${ch.y}"></div>
       <div class="dp-row"><label>缩放 <span class="dp-val" id="dpChScaleVal">${ch.scale}</span></label><input type="range" id="dpChScale" min="0.2" max="3" step="0.05" value="${ch.scale}"></div>
@@ -955,6 +1136,14 @@ function bindDemoPanel(){
     const cl=$('#dpBgClear');if(cl)cl.onclick=()=>{sc.bgImage='';renderDemoPanel();renderGame();pushSceneToEditor(sc);};
   }else if(sel.type==='char'){
     const i=sel.index;const ch=sc.characters[i];if(!ch)return;
+    const libSel=$('#dpChLib');
+    if(libSel)libSel.onchange=()=>{
+      if(libSel.value){const l=getLibCharP(libSel.value);if(l){ch.charId=l.id;ch.actionId=(l.actions&&l.actions[0]&&l.actions[0].id)||'';ch.name=l.name;}}
+      else{ch.charId='';ch.actionId='';}
+      renderDemoPanel();renderCharacters();pushSceneToEditor(sc);
+    };
+    const actSel=$('#dpChAct');
+    if(actSel)actSel.onchange=()=>{ch.actionId=actSel.value;renderCharacters();pushSceneToEditor(sc);};
     const name=$('#dpChName');if(name)name.oninput=()=>{ch.name=name.value;renderCharacters();pushSceneToEditor(sc);};
     const img=$('#dpChImage');if(img)img.oninput=()=>{ch.image=img.value.trim();renderCharacters();pushSceneToEditor(sc);};
     const up=$('#dpChUpload');if(up)up.onclick=()=>openImageFile(data=>{ch.image=data;renderDemoPanel();renderCharacters();pushSceneToEditor(sc);});
@@ -1210,8 +1399,10 @@ function importProject(file){
 function initEditorEvents(){
   $('#projectTitle').addEventListener('input',e=>{project.title=e.target.value;saveEditor();});
   $('#btnNew').onclick=()=>{if(confirm('新建项目将清空当前内容（未导出的内容会丢失）。继续？')){newProject();renderAll();saveEditor();}};
-  $('#btnSample').onclick=()=>{if(confirm('载入示例项目将替换当前内容。继续？')){project=sampleProject();selectedSceneId=project.startScene;renderAll();saveEditor();toast('已载入示例');}};
+  $('#btnSample').onclick=()=>{if(confirm('载入示例项目将替换当前内容。继续？')){project=migrateProject(sampleProject());selectedSceneId=project.startScene;renderAll();saveEditor();toast('已载入示例');}};
   $('#btnPlay').onclick=()=>openPlayer(project);
+  $('#btnCharModule').onclick=()=>{project.characters=project.characters||[];selectedCharId=selectedCharId||((project.characters&&project.characters[0]&&project.characters[0].id)||null);renderCharModule();$('#charModal').classList.remove('hidden');};
+  $('#btnCharModuleClose').onclick=()=>{$('#charModal').classList.add('hidden');saveEditor();};
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
   $('#flagsList').addEventListener('click',e=>{const btn=e.target.closest('button[data-frole=del]');if(btn)btn.closest('.flag-list-row').remove();});
@@ -1248,6 +1439,13 @@ function initPlayerEvents(){
   $('#btnLoad').onclick=openLoadPanel;
   $('#btnSaveClose').onclick=()=>$('#savePanel').classList.add('hidden');
   $('#speedSel').addEventListener('change',()=>{P.speed=parseInt($('#speedSel').value,10)||30;});
+  $('#gameScreen').addEventListener('mousemove',e=>{
+    const r=$('#gameScreen').getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width-0.5;
+    const py=(e.clientY-r.top)/r.height-0.5;
+    $('#characterLayer').style.setProperty('--rx',(-py*6).toFixed(2)+'deg');
+    $('#characterLayer').style.setProperty('--ry',(px*8).toFixed(2)+'deg');
+  });
   $('#gameScreen').addEventListener('click',e=>{
     if(!$('#backlogPanel').classList.contains('hidden')||!$('#savePanel').classList.contains('hidden'))return;
     if(P.demoMode){
