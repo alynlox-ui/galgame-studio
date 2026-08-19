@@ -6,134 +6,134 @@
 <title>Galgame 可视化制作工坊</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;background:#0b0f1a;color:#e2e8f0;height:100vh;overflow:hidden}
+body{font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;background:#fff5f7;color:#4b5563;height:100vh;overflow:hidden}
 .hidden{display:none!important}
-button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;background:#334155;color:#e2e8f0;padding:7px 12px;font-size:13px;transition:.15s}
-button:hover{background:#475569}
-button.active{background:#3b82f6;color:#fff}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;background:#f9a8d4;color:#4b5563;padding:7px 12px;font-size:13px;transition:.15s}
+button:hover{background:#f472b6}
+button.active{background:#ec4899;color:#fff}
 button.mini{padding:3px 8px;font-size:12px;border-radius:6px}
-button.danger{background:#7f1d1d;color:#fca5a5}
-button.danger:hover{background:#991b1b}
-button.primary{background:#2563eb;color:#fff}
-button.primary:hover{background:#1d4ed8}
-button.gold{background:#b45309;color:#fff}
-input,select,textarea{font-family:inherit;background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:7px;padding:7px 9px;font-size:13px;outline:none}
-input:focus,select:focus,textarea:focus{border-color:#3b82f6}
+button.danger{background:#fee2e2;color:#b91c1c}
+button.danger:hover{background:#fecaca}
+button.primary{background:#ec4899;color:#fff}
+button.primary:hover{background:#db2777}
+button.gold{background:#f59e0b;color:#fff}
+input,select,textarea{font-family:inherit;background:#fff5f7;border:1px solid #f9a8d4;color:#4b5563;border-radius:7px;padding:7px 9px;font-size:13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#ec4899}
 textarea{resize:vertical;width:100%;line-height:1.6}
 input[type=color]{padding:2px;width:42px;height:32px;cursor:pointer}
-label{font-size:12px;color:#94a3b8}
+label{font-size:12px;color:#9d174d}
 #editorApp{display:flex;flex-direction:column;height:100vh}
-header{height:58px;background:#111827;border-bottom:1px solid #1f2937;display:flex;align-items:center;gap:8px;padding:0 14px;flex:none;flex-wrap:wrap}
+header{height:58px;background:#ffffff;border-bottom:1px solid #fbcfe8;display:flex;align-items:center;gap:8px;padding:0 14px;flex:none;flex-wrap:wrap}
 header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap}
 #projectTitle{width:220px;font-weight:600}
 #btnPlay{background:#059669}
 #btnPlay:hover{background:#047857}
 .editor-main{display:flex;flex:1;min-height:0}
-#scenePanel{width:248px;flex:none;background:#111827;border-right:1px solid #1f2937;display:flex;flex-direction:column;min-height:0}
+#scenePanel{width:248px;flex:none;background:#ffffff;border-right:1px solid #fbcfe8;display:flex;flex-direction:column;min-height:0}
 .panel-head{padding:12px 12px 6px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
-.panel-sub{padding:4px 12px 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8}
+.panel-sub{padding:4px 12px 8px;display:flex;align-items:center;gap:6px;font-size:12px;color:#9d174d}
 .panel-sub select{flex:1;padding:4px 6px}
 #sceneList{flex:1;overflow-y:auto;padding:0 8px 12px}
-.scene-item{display:flex;align-items:center;gap:6px;background:#0f172a;border:1px solid #1f2937;border-radius:9px;padding:9px 10px;margin-bottom:6px;cursor:pointer;transition:.12s}
-.scene-item:hover{border-color:#475569}
-.scene-item.selected{border-color:#3b82f6;background:#172554}
+.scene-item{display:flex;align-items:center;gap:6px;background:#fff5f7;border:1px solid #fbcfe8;border-radius:9px;padding:9px 10px;margin-bottom:6px;cursor:pointer;transition:.12s}
+.scene-item:hover{border-color:#f472b6}
+.scene-item.selected{border-color:#ec4899;background:#fdf2f8}
 .scene-item .sname{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.scene-item .sbadge{font-size:10px;color:#fbbf24;flex:none}
-.scene-item .sstart{font-size:10px;color:#34d399;flex:none}
-#canvasWrap{flex:1;background:#0a0e1a;position:relative;overflow:hidden;background-image:radial-gradient(circle,#1e293b 1px,transparent 1px);background-size:24px 24px}
+.scene-item .sbadge{font-size:10px;color:#f59e0b;flex:none}
+.scene-item .sstart{font-size:10px;color:#10b981;flex:none}
+#canvasWrap{flex:1;background:#fff5f7;position:relative;overflow:hidden;background-image:radial-gradient(circle,#f9a8d4 1px,transparent 1px);background-size:24px 24px}
 #flowSvg{width:100%;height:100%;display:block}
-#inspector{width:372px;flex:none;background:#111827;border-left:1px solid #1f2937;overflow-y:auto;padding:14px;min-height:0}
-.insp-sec{background:#0f172a;border:1px solid #1f2937;border-radius:10px;padding:12px;margin-bottom:12px}
-.insp-sec h4{margin-bottom:9px;font-size:13px;color:#93c5fd;display:flex;align-items:center;justify-content:space-between}
+#inspector{width:372px;flex:none;background:#ffffff;border-left:1px solid #fbcfe8;overflow-y:auto;padding:14px;min-height:0}
+.insp-sec{background:#fff5f7;border:1px solid #fbcfe8;border-radius:10px;padding:12px;margin-bottom:12px}
+.insp-sec h4{margin-bottom:9px;font-size:13px;color:#be185d;display:flex;align-items:center;justify-content:space-between}
 .insp-row{margin-bottom:8px}
 .insp-row label{display:block;margin-bottom:4px}
 .insp-row input[type=text],.insp-row select,.insp-row textarea{width:100%}
-.choice-card{background:#0b1220;border:1px solid #1e293b;border-radius:9px;padding:10px;margin-bottom:10px}
+.choice-card{background:#ffffff;border:1px solid #f9a8d4;border-radius:9px;padding:10px;margin-bottom:10px}
 .choice-card .row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
 .choice-card .row input[type=text],.choice-card .row select{flex:1;min-width:0}
 .cond-box{position:relative}
 .cond-box input{width:100%;font-family:Consolas,monospace;font-size:12px}
 .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
-.chip{background:#1e293b;border:1px solid #334155;color:#cbd5e1;padding:2px 7px;font-size:11px;border-radius:5px}
-.chip:hover{background:#334155}
-.chip.op{color:#fbbf24;font-family:Consolas,monospace}
+.chip{background:#f9a8d4;border:1px solid #f9a8d4;color:#4b5563;padding:2px 7px;font-size:11px;border-radius:5px}
+.chip:hover{background:#f9a8d4}
+.chip.op{color:#f59e0b;font-family:Consolas,monospace}
 .flag-row{display:flex;gap:5px;align-items:center;margin-bottom:5px}
 .flag-row select{flex:1;min-width:0}
 .flag-row input[type=number]{width:72px}
 .bg-swatches{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
 .bg-swatch{width:26px;height:26px;border-radius:6px;border:2px solid transparent;cursor:pointer}
-.bg-swatch:hover{border-color:#fff}
-.hint{font-size:11px;color:#64748b;line-height:1.5}
+.bg-swatch:hover{border-color:#ec4899}
+.hint{font-size:11px;color:#9d174d;line-height:1.5}
 .node rect{stroke-width:2;transition:filter .1s}
-.node:hover rect{filter:brightness(1.25)}
+.node:hover rect{filter:brightness(1.05)}
 .node text{pointer-events:none;font-family:'Microsoft YaHei',sans-serif}
-.node .nid{fill:#64748b;font-size:10px}
-.node .nname{fill:#e2e8f0;font-size:13px;font-weight:600}
-.node .nbadge{fill:#fbbf24;font-size:11px}
-.edge-label{fill:#cbd5e1;font-size:11px;paint-order:stroke;stroke:#0a0e1a;stroke-width:4px;stroke-linejoin:round}
-#playerApp{position:fixed;inset:0;z-index:100;background:#000}
+.node .nid{fill:#9d174d;font-size:10px}
+.node .nname{fill:#4b5563;font-size:13px;font-weight:600}
+.node .nbadge{fill:#f59e0b;font-size:11px}
+.edge-label{fill:#4b5563;font-size:11px;paint-order:stroke;stroke:#fff5f7;stroke-width:4px;stroke-linejoin:round}
+#playerApp{position:fixed;inset:0;z-index:100;background:#fff5f7}
 #gameScreen{position:absolute;inset:0}
 #gameBg{position:absolute;inset:0;transition:background .5s}
-#gameBg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,rgba(0,0,0,0) 0%,rgba(0,0,0,.55) 100%)}
-#topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;padding:10px 14px;background:linear-gradient(rgba(2,6,23,.85),transparent);z-index:10;flex-wrap:wrap}
-#topbar button{background:rgba(15,23,42,.8);border:1px solid #334155;font-size:12px}
-#topbar button:hover{background:#1e293b}
-#topbar button.active{background:#3b82f6;border-color:#3b82f6}
+#gameBg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 80%,rgba(255,182,193,0) 0%,rgba(255,182,193,.25) 100%)}
+#topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;padding:10px 14px;background:linear-gradient(rgba(255,255,255,.9),transparent);z-index:10;flex-wrap:wrap}
+#topbar button{background:rgba(255,255,255,.85);border:1px solid #f9a8d4;font-size:12px}
+#topbar button:hover{background:#f9a8d4}
+#topbar button.active{background:#ec4899;border-color:#ec4899}
 #choiceArea{position:absolute;left:50%;top:36%;transform:translateX(-50%);display:flex;flex-direction:column;gap:11px;z-index:9;width:min(620px,90vw)}
-.choice-btn{background:var(--ch-bg,rgba(15,23,42,.85));border:1px solid var(--ch-border,#3b82f6);color:var(--ch-color,#e2e8f0);padding:13px 22px;font-size:var(--ch-font,16px);border-radius:var(--ch-radius,12px);text-align:center;backdrop-filter:blur(4px)}
-.choice-btn:hover{background:#1d4ed8;border-color:#60a5fa}
-#textbox{position:absolute;left:50%;bottom:4.5%;transform:translateX(-50%);width:min(920px,93vw);min-height:158px;background:rgba(2,6,23,.78);border:1px solid rgba(148,163,184,.28);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);z-index:8}
-#speakerName{display:inline-block;background:#2563eb;color:#fff;padding:4px 16px;border-radius:999px;font-size:14px;font-weight:700;margin-bottom:10px;box-shadow:0 2px 10px rgba(37,99,235,.5)}
-#textContent{font-size:18px;line-height:1.75;min-height:76px;color:#f1f5f9;letter-spacing:.3px;white-space:pre-wrap}
-#clickHint{position:absolute;right:22px;bottom:12px;font-size:11px;color:#64748b;animation:blink 1.6s infinite;z-index:9}
+.choice-btn{background:var(--ch-bg,rgba(255,255,255,.9));border:1px solid var(--ch-border,#ec4899);color:var(--ch-color,#4b5563);padding:13px 22px;font-size:var(--ch-font,16px);border-radius:var(--ch-radius,12px);text-align:center;backdrop-filter:blur(4px)}
+.choice-btn:hover{background:#db2777;border-color:#db2777}
+#textbox{position:absolute;left:50%;bottom:4.5%;transform:translateX(-50%);width:min(920px,93vw);min-height:158px;background:rgba(255,255,255,.88);border:1px solid rgba(236,72,153,.35);border-radius:14px;padding:18px 22px;backdrop-filter:blur(8px);z-index:8}
+#speakerName{display:inline-block;background:#ec4899;color:#fff;padding:4px 16px;border-radius:999px;font-size:14px;font-weight:700;margin-bottom:10px;box-shadow:0 2px 10px rgba(236,72,153,.35)}
+#textContent{font-size:18px;line-height:1.75;min-height:76px;color:#374151;letter-spacing:.3px;white-space:pre-wrap}
+#clickHint{position:absolute;right:22px;bottom:12px;font-size:11px;color:#9d174d;animation:blink 1.6s infinite;z-index:9}
 @keyframes blink{0%,100%{opacity:.35}50%{opacity:1}}
-#titleScreen,#endingScreen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 30%,#1e293b,#020617);z-index:30}
+#titleScreen,#endingScreen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 30%,#f9a8d4,#ffe4ef);z-index:30}
 #titleScreen h1{font-size:40px;font-weight:900;letter-spacing:2px}
-#titleScreen .sub{color:#94a3b8}
-#endingScreen h1{font-size:34px;color:#fbbf24}
-#endingScreen .ending-kind{font-size:14px;color:#94a3b8;border:1px solid #334155;padding:5px 14px;border-radius:999px}
+#titleScreen .sub{color:#9d174d}
+#endingScreen h1{font-size:34px;color:#f59e0b}
+#endingScreen .ending-kind{font-size:14px;color:#9d174d;border:1px solid #f9a8d4;padding:5px 14px;border-radius:999px}
 .title-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.modal{position:fixed;inset:0;background:rgba(2,6,23,.75);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.modal-box{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:22px;width:min(560px,94vw);max-height:88vh;overflow-y:auto}
-.modal-box h3{margin-bottom:10px;color:#93c5fd}
+.modal{position:fixed;inset:0;background:rgba(255,228,239,.55);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-box{background:#ffffff;border:1px solid #fbcfe8;border-radius:16px;padding:22px;width:min(560px,94vw);max-height:88vh;overflow-y:auto}
+.modal-box h3{margin-bottom:10px;color:#be185d}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
 .flag-list-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .flag-list-row input[type=text]{flex:1}
 .flag-list-row input[type=number]{width:90px}
 .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.slot{background:#0f172a;border:1px solid #1f2937;border-radius:10px;padding:10px;cursor:pointer;min-height:74px;transition:.12s}
-.slot:hover{border-color:#3b82f6}
-.slot .slot-num{font-weight:700;color:#64748b;font-size:13px}
-.slot .slot-info{font-size:12px;color:#94a3b8;margin-top:5px;line-height:1.45;word-break:break-all}
-.slot small{color:#64748b}
-#backlogPanel{position:absolute;right:0;top:0;bottom:0;width:min(440px,94vw);background:rgba(2,6,23,.94);border-left:1px solid #334155;z-index:40;display:flex;flex-direction:column}
-#backlogPanel .bp-head{padding:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}
+.slot{background:#fff5f7;border:1px solid #fbcfe8;border-radius:10px;padding:10px;cursor:pointer;min-height:74px;transition:.12s}
+.slot:hover{border-color:#ec4899}
+.slot .slot-num{font-weight:700;color:#9d174d;font-size:13px}
+.slot .slot-info{font-size:12px;color:#9d174d;margin-top:5px;line-height:1.45;word-break:break-all}
+.slot small{color:#9d174d}
+#backlogPanel{position:absolute;right:0;top:0;bottom:0;width:min(440px,94vw);background:rgba(255,255,255,.96);border-left:1px solid #f9a8d4;z-index:40;display:flex;flex-direction:column}
+#backlogPanel .bp-head{padding:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fbcfe8}
 #backlogList{flex:1;overflow-y:auto;padding:12px 14px}
-.bp-entry{margin-bottom:12px;font-size:14px;line-height:1.6;color:#cbd5e1}
-.bp-entry b{color:#60a5fa}
-#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#1e293b;border:1px solid #475569;padding:10px 20px;border-radius:10px;z-index:300;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
+.bp-entry{margin-bottom:12px;font-size:14px;line-height:1.6;color:#4b5563}
+.bp-entry b{color:#db2777}
+#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#f9a8d4;border:1px solid #f472b6;padding:10px 20px;border-radius:10px;z-index:300;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
 #characterLayer{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
 .char-sprite{position:absolute;transform:translate(-50%,-100%);pointer-events:none;user-select:none;text-align:center}
-.char-sprite img{display:block;width:auto;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
-.char-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#1e293b,#0f172a);border:2px dashed #475569;border-radius:14px;color:#94a3b8;font-size:14px;box-shadow:0 10px 22px rgba(0,0,0,.4)}
+.char-sprite img{display:block;width:auto;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(236,72,153,.35))}
+.char-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#f9a8d4,#fff5f7);border:2px dashed #f472b6;border-radius:14px;color:#9d174d;font-size:14px;box-shadow:0 10px 22px rgba(236,72,153,.25)}
 #gameScreen.demo-mode .char-sprite{pointer-events:auto;cursor:grab}
 #gameScreen.demo-mode .char-sprite:active{cursor:grabbing}
 #gameScreen.demo-mode #gameBg,#gameScreen.demo-mode #characterLayer{cursor:crosshair}
-.char-sprite.selected img,.char-sprite.selected .char-placeholder{outline:3px solid #3b82f6;outline-offset:3px}
+.char-sprite.selected img,.char-sprite.selected .char-placeholder{outline:3px solid #ec4899;outline-offset:3px}
 #gameScreen.demo-mode #textbox,#gameScreen.demo-mode #speakerName,#gameScreen.demo-mode #choiceArea{cursor:grab}
 #gameScreen.demo-mode #textbox:active,#gameScreen.demo-mode #choiceArea:active{cursor:grabbing}
-#gameScreen.demo-mode #choiceArea{padding:8px;border-radius:12px;background:rgba(59,130,246,.06)}
-#gameScreen.demo-mode #textbox.selected,#gameScreen.demo-mode #speakerName.selected,#gameScreen.demo-mode #choiceArea.selected{outline:2px solid #3b82f6;outline-offset:2px}
-#demoPanel{position:absolute;right:0;top:0;bottom:0;width:min(360px,94vw);background:rgba(2,6,23,.95);border-left:1px solid #334155;z-index:50;display:flex;flex-direction:column}
-#demoPanel .dp-head{padding:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}
+#gameScreen.demo-mode #choiceArea{padding:8px;border-radius:12px;background:rgba(236,72,153,.06)}
+#gameScreen.demo-mode #textbox.selected,#gameScreen.demo-mode #speakerName.selected,#gameScreen.demo-mode #choiceArea.selected{outline:2px solid #ec4899;outline-offset:2px}
+#demoPanel{position:absolute;right:0;top:0;bottom:0;width:min(360px,94vw);background:rgba(255,255,255,.97);border-left:1px solid #f9a8d4;z-index:50;display:flex;flex-direction:column}
+#demoPanel .dp-head{padding:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fbcfe8}
 #demoBody{flex:1;overflow-y:auto;padding:14px}
-.dp-sec{background:#0f172a;border:1px solid #1f2937;border-radius:10px;padding:12px;margin-bottom:12px}
-.dp-sec h4{margin-bottom:8px;color:#93c5fd;font-size:13px}
+.dp-sec{background:#fff5f7;border:1px solid #fbcfe8;border-radius:10px;padding:12px;margin-bottom:12px}
+.dp-sec h4{margin-bottom:8px;color:#be185d;font-size:13px}
 .dp-row{margin-bottom:10px}
 .dp-row label{display:block;margin-bottom:4px}
 .dp-row input[type=text]{width:100%}
 .dp-row input[type=range]{width:100%}
-.dp-val{float:right;color:#fbbf24;font-family:Consolas,monospace;font-size:12px}
+.dp-val{float:right;color:#f59e0b;font-family:Consolas,monospace;font-size:12px}
 .dp-btns{display:flex;gap:6px;flex-wrap:wrap}
 </style>
 </head>
@@ -161,9 +161,9 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap}
     <div id="canvasWrap">
       <svg id="flowSvg">
         <defs>
-          <marker id="arrowNext" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#94a3b8"/></marker>
+          <marker id="arrowNext" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#9d174d"/></marker>
           <marker id="arrowAuto" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#f97316"/></marker>
-          <marker id="arrowChoice" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#38bdf8"/></marker>
+          <marker id="arrowChoice" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 z" fill="#ec4899"/></marker>
         </defs>
         <g id="flowWorld"></g>
       </svg>
@@ -308,7 +308,7 @@ function validateCond(expr){try{evalCond(expr,{});return true;}catch(e){return f
 let project=null;
 let selectedSceneId=null;
 const editorSaveKey='gvn_editor_project_v1';
-function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#0f172a',bgImage:'',speaker:'',text:'',ending:null,setFlags:[],next:'',autoBranches:[],choices:[],characters:[]};}
+function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#fff5f7',bgImage:'',speaker:'',text:'',ending:null,setFlags:[],next:'',autoBranches:[],choices:[],characters:[]};}
 function newProject(){
   const s=defaultScene('开始场景',100,120);s.text='欢迎使用 Galgame 制作工坊！在右侧面板编辑这段文本，然后点击 ▶ 运行测试。';
   project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},scenes:[s]};
@@ -316,18 +316,18 @@ function newProject(){
 }
 function sampleProject(){
   return {id:uid('proj'),title:'示例：午后的抉择',startScene:'s_start',flags:{'小夜好感':0},scenes:[
-    {id:'s_start',name:'放学后',x:60,y:220,bg:'#0f172a',speaker:'',text:'放学的铃声响起，你收拾好书包，走出教室。黄昏的阳光把走廊染成金色。',setFlags:[],next:'s_meet',autoBranches:[],choices:[],ending:null},
+    {id:'s_start',name:'放学后',x:60,y:220,bg:'#fff5f7',speaker:'',text:'放学的铃声响起，你收拾好书包，走出教室。黄昏的阳光把走廊染成金色。',setFlags:[],next:'s_meet',autoBranches:[],choices:[],ending:null},
     {id:'s_meet',name:'校门口',x:330,y:220,bg:'#1e1b4b',speaker:'小夜',text:'「啊，你也现在才走呀？」小夜在校门口朝你挥手。',setFlags:[],next:'',autoBranches:[],choices:[
       {id:'c1',text:'和她一起走一段',target:'s_road',cond:'',setFlags:[{flag:'小夜好感',op:'+',value:1}]},
       {id:'c2',text:'说有事，自己回去',target:'s_alone',cond:'',setFlags:[]}
     ],ending:null},
     {id:'s_road',name:'同行',x:600,y:110,bg:'#14532d',speaker:'',text:'你们并肩走在河堤上，聊着今天的课程。夕阳把影子拉得很长。',setFlags:[{flag:'小夜好感',op:'+',value:1}],next:'s_night',autoBranches:[],choices:[],ending:null},
-    {id:'s_alone',name:'独自归途',x:600,y:340,bg:'#334155',speaker:'',text:'你一个人踏上回家的路。偶尔，会想起小夜挥手时的笑容。',setFlags:[],next:'s_night',autoBranches:[],choices:[],ending:null},
-    {id:'s_night',name:'夜晚',x:870,y:220,bg:'#0f172a',speaker:'',text:'躺在床上，你回想这一天发生的事。',setFlags:[],next:'',autoBranches:[
+    {id:'s_alone',name:'独自归途',x:600,y:340,bg:'#f9a8d4',speaker:'',text:'你一个人踏上回家的路。偶尔，会想起小夜挥手时的笑容。',setFlags:[],next:'s_night',autoBranches:[],choices:[],ending:null},
+    {id:'s_night',name:'夜晚',x:870,y:220,bg:'#fff5f7',speaker:'',text:'躺在床上，你回想这一天发生的事。',setFlags:[],next:'',autoBranches:[
       {target:'s_good',cond:'小夜好感 >= 2'},{target:'s_normal',cond:'true'}
     ],choices:[],ending:null},
     {id:'s_good',name:'结局：与你共度的黄昏',x:1160,y:100,bg:'#422006',speaker:'',text:'第二天，小夜主动来找你：「今天也一起回家吧？」你笑着点了点头。',setFlags:[],next:'',autoBranches:[],choices:[],ending:{kind:'good',title:'与你共度的黄昏'}},
-    {id:'s_normal',name:'结局：平淡的一天',x:1160,y:340,bg:'#1e293b',speaker:'',text:'日子依旧平淡地流淌。也许，明天会有所不同吧。',setFlags:[],next:'',autoBranches:[],choices:[],ending:{kind:'normal',title:'平淡的一天'}}
+    {id:'s_normal',name:'结局：平淡的一天',x:1160,y:340,bg:'#f9a8d4',speaker:'',text:'日子依旧平淡地流淌。也许，明天会有所不同吧。',setFlags:[],next:'',autoBranches:[],choices:[],ending:{kind:'normal',title:'平淡的一天'}}
   ]};
 }
 function getScene(id){return (project&&project.scenes.find(s=>s.id===id))||null;}
@@ -349,10 +349,12 @@ function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlag
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
-  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#0f172a';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;});});
-  const du={textbox:{show:true,x:50,y:94,w:82,opacity:0.78,bg:'#020617',border:'#94a3b8',radius:14,fontColor:'#f1f5f9',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#2563eb',color:'#ffffff',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#0f172a',border:'#3b82f6',color:'#e2e8f0',radius:12,fontSize:16},hint:{show:true}};
+  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#fff5f7';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;});});
+  const du={textbox:{show:true,x:50,y:94,w:82,opacity:0.88,bg:'#ffffff',border:'#f9a8d4',radius:14,fontColor:'#374151',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#ec4899',color:'#ffffff',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#ffffff',border:'#ec4899',color:'#9d174d',radius:12,fontSize:16},hint:{show:true}};
   p.ui=p.ui||{};
   Object.keys(du).forEach(k=>{p.ui[k]=Object.assign(du[k],p.ui[k]||{});});
+  const oldMap={textbox:{bg:'#020617',border:'#94a3b8',fontColor:'#f1f5f9'},speaker:{bg:'#2563eb'},choices:{bg:'#0f172a',border:'#3b82f6',color:'#e2e8f0'}};
+  Object.keys(oldMap).forEach(k=>{Object.keys(oldMap[k]).forEach(f=>{if(p.ui[k][f]===oldMap[k][f])p.ui[k][f]=du[k][f];});});
   return p;
 }
 function saveEditor(){try{localStorage.setItem(editorSaveKey,JSON.stringify(project));}catch(e){}}
@@ -407,9 +409,9 @@ function inspectorHTML(){
     <div class="row"><input type="text" data-role="choiceText" data-idx="${i}" value="${esc(c.text)}" placeholder="选项文字" style="flex:2">
     <select data-role="choiceTarget" data-idx="${i}" style="flex:1.4">${project.scenes.map(s=>`<option value="${esc(s.id)}" ${c.target===s.id?'selected':''}>${esc(s.name||s.id)}</option>`).join('')}</select>
     <button class="mini danger" data-role="delChoice" data-idx="${i}">✕</button></div>
-    <div class="row" style="margin-bottom:3px"><label style="font-size:11px;color:#64748b">显示条件：</label></div>
+    <div class="row" style="margin-bottom:3px"><label style="font-size:11px;color:#9d174d">显示条件：</label></div>
     ${condBoxHTML('choiceCond',i,'',c.cond,flags)}
-    <div class="row" style="margin-top:6px"><label style="font-size:11px;color:#64748b">选中后设置数值：</label><button class="mini" data-role="addChoiceFlag" data-owner="${i}">＋</button></div>
+    <div class="row" style="margin-top:6px"><label style="font-size:11px;color:#9d174d">选中后设置数值：</label><button class="mini" data-role="addChoiceFlag" data-owner="${i}">＋</button></div>
     ${(c.setFlags||[]).map((r,j)=>flagRowHTML(r,String(i),j,flags)).join('')}
   </div>`).join('');
   const sceneFlagRows=(sc.setFlags||[]).map((r,j)=>flagRowHTML(r,'',j,flags)).join('');
@@ -419,8 +421,8 @@ function inspectorHTML(){
     <div class="insp-row"><label>场景名称</label><input type="text" data-field="name" value="${esc(sc.name)}"></div>
     <div class="insp-row"><label>说话角色（可空）</label><input type="text" data-field="speaker" value="${esc(sc.speaker)}"></div>
     <div class="insp-row"><label>背景色</label>
-      <div style="display:flex;gap:6px;align-items:center"><input type="color" data-field="bg" value="${esc(sc.bg)}"><span style="font-size:12px;color:#94a3b8">${esc(sc.bg)}</span></div>
-      <div class="bg-swatches">${['#0f172a','#1e1b4b','#14532d','#422006','#334155','#7f1d1d','#0c4a6e','#3b0764'].map(c=>`<button type="button" class="bg-swatch" data-bg="${c}" style="background:${c}"></button>`).join('')}</div>
+      <div style="display:flex;gap:6px;align-items:center"><input type="color" data-field="bg" value="${esc(sc.bg)}"><span style="font-size:12px;color:#9d174d">${esc(sc.bg)}</span></div>
+      <div class="bg-swatches">${['#fff5f7','#1e1b4b','#14532d','#422006','#f9a8d4','#fee2e2','#0c4a6e','#3b0764'].map(c=>`<button type="button" class="bg-swatch" data-bg="${c}" style="background:${c}"></button>`).join('')}</div>
     </div>
   </div>
   <div class="insp-sec">
@@ -467,9 +469,9 @@ function renderFlow(){
     const path=document.createElementNS(SVGNS,'path');
     const c1={x:p1.x+dx*0.35,y:p1.y+dy*0.3},c2={x:p1.x+dx*0.65,y:p1.y+dy*0.7};
     path.setAttribute('d',`M ${p1.x} ${p1.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`);
-    if(type==='next'){path.setAttribute('stroke','#94a3b8');path.setAttribute('stroke-width','2');path.setAttribute('marker-end','url(#arrowNext)');}
+    if(type==='next'){path.setAttribute('stroke','#9d174d');path.setAttribute('stroke-width','2');path.setAttribute('marker-end','url(#arrowNext)');}
     if(type==='auto'){path.setAttribute('stroke','#f97316');path.setAttribute('stroke-width','2');path.setAttribute('stroke-dasharray','7 5');path.setAttribute('marker-end','url(#arrowAuto)');}
-    if(type==='choice'){path.setAttribute('stroke','#38bdf8');path.setAttribute('stroke-width','2');path.setAttribute('marker-end','url(#arrowChoice)');}
+    if(type==='choice'){path.setAttribute('stroke','#ec4899');path.setAttribute('stroke-width','2');path.setAttribute('marker-end','url(#arrowChoice)');}
     path.setAttribute('fill','none');g.appendChild(path);
     if(label){
       const t=document.createElementNS(SVGNS,'text');t.setAttribute('x',p1.x+dx*0.5);t.setAttribute('y',p1.y+dy*0.5-7);t.setAttribute('text-anchor','middle');t.setAttribute('class','edge-label');t.textContent=trunc(type==='auto'?('if '+label):label,22);
@@ -484,8 +486,8 @@ function renderFlow(){
   scenes.forEach(sc=>{
     const node=document.createElementNS(SVGNS,'g');node.setAttribute('class','node');node.setAttribute('transform',`translate(${sc.x},${sc.y})`);node.dataset.id=sc.id;
     const rect=document.createElementNS(SVGNS,'rect');rect.setAttribute('width',NODE_W);rect.setAttribute('height',NODE_H);rect.setAttribute('rx',11);
-    rect.setAttribute('fill',sc.ending?'#422006':'#1e293b');
-    rect.setAttribute('stroke',sc.id===selectedSceneId?'#3b82f6':(sc.id===project.startScene?'#10b981':(sc.ending?'#f59e0b':'#475569')));
+    rect.setAttribute('fill',sc.ending?'#422006':'#f9a8d4');
+    rect.setAttribute('stroke',sc.id===selectedSceneId?'#ec4899':(sc.id===project.startScene?'#10b981':(sc.ending?'#f59e0b':'#f472b6')));
     rect.setAttribute('stroke-width',sc.id===selectedSceneId?3:2);
     node.appendChild(rect);
     const name=document.createElementNS(SVGNS,'text');name.setAttribute('x',NODE_W/2);name.setAttribute('y',30);name.setAttribute('text-anchor','middle');name.setAttribute('class','nname');name.textContent=trunc(sc.name||sc.id,14);node.appendChild(name);
@@ -700,7 +702,7 @@ function renderGame(){
   const sc=currentScene();
   const bg=$('#gameBg');
   bg.style.background='none';
-  bg.style.backgroundColor=sc?sc.bg:'#0f172a';
+  bg.style.backgroundColor=sc?sc.bg:'#fff5f7';
   if(sc&&sc.bgImage){
     bg.style.backgroundImage='url("'+String(sc.bgImage).replace(/"/g,'\\"')+'")';
     bg.style.backgroundSize='cover';
@@ -710,7 +712,7 @@ function renderGame(){
   applyUILayout();
 }
 function hexToRgba(hex,a){
-  hex=String(hex||'#000000').replace('#','');
+  hex=String(hex||'#fff5f7000').replace('#','');
   if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
   const n=parseInt(hex,16);
   if(isNaN(n))return 'rgba(2,6,23,'+a+')';
