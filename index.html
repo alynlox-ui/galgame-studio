@@ -240,6 +240,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
   <div id="titleScreen" class="hidden">
     <h1 id="titleText"></h1>
     <div class="sub" id="titleSub"></div>
+    <div id="titleEndings" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:560px"></div>
     <div class="title-btns">
       <button id="btnStartGame" class="primary" style="font-size:17px;padding:12px 30px">开始游戏</button>
       <button id="btnTitleEditor" style="font-size:15px;padding:12px 22px">返回编辑器</button>
@@ -474,10 +475,16 @@ function inspectorHTML(){
       <div style="display:flex;gap:6px;align-items:center"><input type="color" data-field="bg" value="${esc(sc.bg)}"><span style="font-size:12px;color:#C75C7E">${esc(sc.bg)}</span></div>
       <div class="bg-swatches">${['#ffffff','#1e1b4b','#14532d','#422006','#FB7299','#fee2e2','#0c4a6e','#3b0764'].map(c=>`<button type="button" class="bg-swatch" data-bg="${c}" style="background:${c}"></button>`).join('')}</div>
     </div>
+    <div class="insp-row"><label>背景图片</label>
+      <div class="dp-btns"><button type="button" class="mini primary" data-role="bgUpload">📁 上传背景图</button><button type="button" class="mini danger" data-role="bgClear">清除</button></div>
+      <input type="text" data-role="bgImageUrl" value="${esc(sc.bgImage)}" placeholder="或粘贴图片 URL" spellcheck="false" style="margin-top:6px">
+      ${sc.bgImage?`<img src="${esc(sc.bgImage)}" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;display:block">`:''}
+    </div>
   </div>
   <div class="insp-sec">
     <h4>📝 剧情文本</h4>
     <textarea rows="6" data-field="text" placeholder="本场景显示的文本……">${esc(sc.text)}</textarea>
+    <div class="chips">${flags.length?flags.map(f=>`<button type="button" class="chip" data-insert="{${esc(f)}}">{${esc(f)}}</button>`).join(''):''}<span class="hint">点击上方数值可插入变量，如 {小夜好感}，播放时自动替换为当前数值。</span></div>
   </div>
   <div class="insp-sec">
     <h4>🚪 结局</h4>
@@ -681,10 +688,12 @@ function charCutApply(c){
   const w=charCutImg.naturalWidth||charCutImg.width,h=charCutImg.naturalHeight||charCutImg.height;
   const off=document.createElement('canvas');off.width=w;off.height=h;
   const ctx=off.getContext('2d');ctx.drawImage(charCutImg,0,0,w,h);
-  const data=ctx.getImageData(0,0,w,h);const d=data.data;const tol=charCutTolerance*2.55;
+  const data=ctx.getImageData(0,0,w,h);const d=data.data;const tol=charCutTolerance*2.55;const feather=Math.max(4,tol*0.35);
   for(let i=0;i<d.length;i+=4){
     const dr=d[i]-charCutColor.r,dg=d[i+1]-charCutColor.g,db=d[i+2]-charCutColor.b;
-    if(Math.sqrt(dr*dr+dg*dg+db*db)<=tol)d[i+3]=0;
+    const dist=Math.sqrt(dr*dr+dg*dg+db*db);
+    if(dist<=tol){d[i+3]=0;}
+    else if(dist<=tol+feather){d[i+3]=Math.round((dist-tol)/feather*255);}
   }
   ctx.putImageData(data,0,0);
   c.baseImage=off.toDataURL('image/png');
@@ -700,12 +709,14 @@ function insertAtCursor(input,text){
 }
 function handleInspectorClick(e){
   const t=e.target;
-  if(t.dataset&&t.dataset.insert){const box=t.closest('.cond-box')||t.closest('.choice-card');const input=box?box.querySelector('input[data-role],input[type=text]'):null;if(input)insertAtCursor(input,t.dataset.insert);return;}
+  if(t.dataset&&t.dataset.insert){const box=t.closest('.cond-box')||t.closest('.choice-card')||t.closest('.insp-sec');const input=box?box.querySelector('textarea,input[type=text],input[data-role]'):null;if(input)insertAtCursor(input,t.dataset.insert);return;}
   if(t.dataset&&t.dataset.bg){const sc=selectedScene();if(sc){sc.bg=t.dataset.bg;renderInspector();renderFlow();saveEditor();}return;}
   const role=t.dataset?t.dataset.role:null;if(!role)return;
   const sc=selectedScene();if(!sc)return;
   const idx=t.dataset.idx!==undefined?+t.dataset.idx:null;
   const owner=t.dataset.owner!==undefined?t.dataset.owner:'';
+  if(role==='bgUpload'){openImageFile(data=>{sc.bgImage=data;renderInspector();saveEditor();toast('背景图已上传');});return;}
+  if(role==='bgClear'){sc.bgImage='';renderInspector();saveEditor();toast('已清除背景图');return;}
   if(role==='addFlag'){sc.setFlags.push({flag:allFlagNames()[0]||'新数值',op:'+',value:1});renderInspector();return;}
   if(role==='delFlag'){sc.setFlags.splice(idx,1);renderInspector();return;}
   if(role==='addAuto'){sc.autoBranches.push({target:'',cond:''});renderInspector();return;}
@@ -744,6 +755,7 @@ function handleInspectorChange(e){
   }
   const role=t.dataset.role;if(!role)return;
   const idx=t.dataset.idx!==undefined?+t.dataset.idx:null;const owner=t.dataset.owner!==undefined?t.dataset.owner:'';
+  if(role==='bgImageUrl'){sc.bgImage=t.value.trim();saveEditor();return;}
   if(role==='choiceText'){sc.choices[idx].text=t.value;}
   else if(role==='choiceTarget'){sc.choices[idx].target=t.value;renderFlow();}
   else if(role==='choiceCond'){sc.choices[idx].cond=t.value;}
@@ -786,6 +798,8 @@ function showTitle(){
   $('#titleText').textContent=P.project.title||'未命名作品';
   const ends=P.unlockedEndings;
   $('#titleSub').textContent=ends.length?('已解锁结局：'+ends.length+' 个'):'尚未解锁任何结局';
+  const kindMap={good:'好结局',normal:'普通结局',bad:'坏结局',true:'真结局',custom:'自定义结局'};
+  $('#titleEndings').innerHTML=ends.map(k=>{const p=k.split('|');return `<span style="background:#FFFFFF;border:1px solid #E3E5E7;border-radius:999px;padding:4px 12px;font-size:12px;color:#61666D">${esc(kindMap[p[0]]||'结局')} · ${esc(p[1]||'END')}</span>`;}).join('');
 }
 function startNewGame(){
   P.sceneId=null;P.flags=deepClone(P.project.flags||{});P.backlog=[];P.readScenes=new Set();P.history=[];P.ending=null;P.currentChoices=[];
@@ -796,6 +810,9 @@ function startNewGame(){
   hideChoices();
   if(P.project.startScene&&getSceneP(P.project.startScene))enterScene(P.project.startScene);
   else{$('#textContent').textContent='（项目没有设置起始场景，请返回编辑器设置。）';$('#speakerName').style.display='none';}
+}
+function interpolateText(text,flags){
+  return String(text||'').replace(/\{([^}]+)\}/g,(m,k)=>{k=k.trim();return (k in flags)?flags[k]:m;});
 }
 function pushHistory(){
   P.history.push({sceneId:P.sceneId,flags:deepClone(P.flags),backlog:deepClone(P.backlog),readScenes:Array.from(P.readScenes)});
@@ -813,13 +830,14 @@ function enterScene(id,choiceFlags){
   P.currentChoices=computeChoices(sc);
   hideChoices();
   renderGame();
-  const hasText=!!(sc.text&&sc.text.trim());
+  const displayText=interpolateText(sc.text,P.flags);
+  const hasText=!!(displayText&&displayText.trim());
   if(hasText){
-    P.backlog.push({speaker:sc.speaker||'',text:sc.text});
+    P.backlog.push({speaker:sc.speaker||'',text:displayText,sceneId:P.sceneId,flags:deepClone(P.flags),readScenes:Array.from(P.readScenes)});
     renderBacklogIfOpen();
-    startTyping(sc.speaker,sc.text);
+    startTyping(sc.speaker,displayText);
   }else{
-    if(sc.speaker)P.backlog.push({speaker:sc.speaker,text:''});
+    if(sc.speaker)P.backlog.push({speaker:sc.speaker,text:'',sceneId:P.sceneId,flags:deepClone(P.flags),readScenes:Array.from(P.readScenes)});
     if(sc.ending){showEnding(sc.ending);return;}
     if(P.currentChoices.length){renderChoices();return;}
     P.pendingAdvance=setTimeout(()=>{P.pendingAdvance=null;if(!P.ending&&P.currentChoices.length===0&&P.sceneId===id)goNext();},280);
@@ -1299,8 +1317,23 @@ function renderBacklogIfOpen(){if(!$('#backlogPanel').classList.contains('hidden
 function renderBacklog(){
   const box=$('#backlogList');box.innerHTML='';
   if(!P.backlog.length){box.innerHTML='<p class="hint">暂无记录</p>';return;}
-  P.backlog.forEach(en=>{if(en.text){const d=document.createElement('div');d.className='bp-entry';d.innerHTML=(en.speaker?`<b>${esc(en.speaker)}：</b>`:'')+esc(en.text);box.appendChild(d);}});
+  P.backlog.forEach((en,idx)=>{if(en.text){const d=document.createElement('div');d.className='bp-entry';d.style.cursor='pointer';d.title='点击跳转到此句';d.innerHTML=(en.speaker?`<b>${esc(en.speaker)}：</b>`:'')+esc(en.text);d.onclick=()=>jumpToBacklog(idx);box.appendChild(d);}});
   box.scrollTop=box.scrollHeight;
+}
+function jumpToBacklog(idx){
+  const en=P.backlog[idx];if(!en)return;
+  stopAllTimers();
+  P.sceneId=en.sceneId||P.sceneId;
+  P.flags=deepClone(en.flags||P.flags);
+  P.readScenes=new Set(en.readScenes||[]);
+  P.backlog=P.backlog.slice(0,idx+1);
+  P.history=[];
+  P.ending=null;P.currentChoices=[];
+  $('#endingScreen').classList.add('hidden');
+  $('#backlogPanel').classList.add('hidden');
+  hideChoices();renderGame();
+  showText(en.speaker||'',en.text||'',true);
+  if(P.sceneId){P.currentChoices=computeChoices(currentScene());if(P.currentChoices.length)renderChoices();}
 }
 function openBacklog(){$('#backlogPanel').classList.remove('hidden');renderBacklog();}
 function recordEnding(ending){
