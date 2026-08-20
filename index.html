@@ -169,6 +169,20 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 .char-anim.anim-fade-in{animation:chFadeIn .8s ease-out both}
 .char-anim.anim-pulse{animation:chPulse 1.6s ease-in-out infinite}
 .char-sprite.live2d img{transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s ease-out;transform-style:preserve-3d}
+/* PS图层 / 关键帧 / Gizmo */
+.layer-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;background:#F4F5F7;border:1px solid #E3E5E7;border-radius:8px;padding:6px}
+.layer-row .lr-name{width:70px}
+.layer-row .lr-img{flex:1;min-width:90px}
+.layer-row .lr-op{width:70px}
+.kf-box{background:#F4F5F7;border:1px solid #E3E5E7;border-radius:8px;padding:8px;margin:6px 0}
+.kf-row{display:flex;gap:4px;align-items:center;margin-bottom:5px;flex-wrap:wrap}
+.kf-row input[type=number]{width:54px}
+.kf-row input[type=range]{width:80px}
+.kf-row select{width:92px}
+.gizmo{position:absolute;width:16px;height:16px;border-radius:50%;background:#FB7299;border:2px solid #FFFFFF;display:flex;align-items:center;justify-content:center;font-size:9px;color:#FFFFFF;z-index:6;pointer-events:auto;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.gizmo-scale{right:-10px;bottom:-10px;cursor:nwse-resize}
+.gizmo-rotate{right:-10px;top:-10px;cursor:grab}
+.gizmo-rotate:active{cursor:grabbing}
 </style>
 </head>
 <body>
@@ -399,8 +413,8 @@ function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlag
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
-  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';});});
-  p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;});});
+  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;});});
+  p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.overlays=c.overlays||[];c.overlays.forEach(o=>{o.name=o.name||'图层';o.image=o.image||'';o.opacity=o.opacity??1;o.visible=o.visible!==false;});c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;a.duration=a.duration??2;a.loop=a.loop!==false;a.keyframes=a.keyframes||[];a.keyframes.forEach(k=>{k.t=k.t??0;k.x=k.x??0;k.y=k.y??0;k.scale=k.scale??1;k.opacity=k.opacity??1;k.rotate=k.rotate??0;k.ease=k.ease||'linear';});});});
   const du={textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};
   p.ui=p.ui||{};
   Object.keys(du).forEach(k=>{p.ui[k]=Object.assign(du[k],p.ui[k]||{});});
@@ -595,6 +609,7 @@ function autoLayout(){
 }
 /* ---------------- 人物模块（编辑器） ---------------- */
 let selectedCharId=null;
+let keyframeActionId=null;
 let charCutImg=null,charCutColor=null,charCutTolerance=30;
 function getLibChar(id){return (project&&project.characters||[]).find(c=>c.id===id)||null;}
 function animOptions(sel){
@@ -611,16 +626,56 @@ function renderCharLibList(){
     box.appendChild(el);
   });
 }
+function layerRowHTML(o,i,total){
+  return `<div class="layer-row">
+    <input type="text" class="lr-name" id="lrName${i}" value="${esc(o.name)}" placeholder="图层名">
+    <input type="text" class="lr-img" id="lrImg${i}" value="${esc(o.image)}" placeholder="图片URL" spellcheck="false">
+    <input type="range" class="lr-op" id="lrOp${i}" min="0" max="1" step="0.05" value="${o.opacity}" title="不透明度">
+    <input type="checkbox" id="lrVis${i}" ${o.visible?'checked':''} title="显示">
+    <button class="mini" id="lrUp${i}" ${i===0?'disabled':''}>↑</button>
+    <button class="mini" id="lrDown${i}" ${i===total-1?'disabled':''}>↓</button>
+    <button class="mini danger" id="lrDel${i}">✕</button>
+  </div>`;
+}
+function easeOptions(sel){
+  const list=[['linear','线性'],['easeIn','缓入'],['easeOut','缓出'],['easeInOut','缓入缓出']];
+  return list.map(a=>`<option value="${a[0]}" ${sel===a[0]?'selected':''}>${a[1]}</option>`).join('');
+}
+function kfEditorHTML(a){
+  const kfs=(a.keyframes||[]).map((k,j)=>`<div class="kf-row">
+    <input type="range" id="kfT${j}" min="0" max="1" step="0.05" value="${k.t}" title="时间(0~1)">
+    <input type="number" id="kfX${j}" value="${k.x}" step="1" title="X偏移px">
+    <input type="number" id="kfY${j}" value="${k.y}" step="1" title="Y偏移px">
+    <input type="number" id="kfS${j}" value="${k.scale}" step="0.05" title="缩放倍率">
+    <input type="number" id="kfO${j}" value="${k.opacity}" step="0.05" title="不透明度">
+    <input type="number" id="kfR${j}" value="${k.rotate}" step="1" title="旋转deg">
+    <select id="kfE${j}">${easeOptions(k.ease)}</select>
+    <button class="mini danger" id="kfDel${j}">✕</button>
+  </div>`).join('');
+  return `<div class="kf-box">
+    <div class="kf-row">
+      <label style="font-size:12px">时长(s) <input type="number" id="kfDur" value="${a.duration??2}" step="0.5" min="0.5" style="width:64px"></label>
+      <label style="font-size:12px"><input type="checkbox" id="kfLoop" ${a.loop!==false?'checked':''}> 循环</label>
+      <button class="mini primary" id="kfAdd">＋ 关键帧</button>
+      <button class="mini" id="kfClose">关闭</button>
+    </div>
+    ${kfs}
+    <p class="hint">时间为0~1（周期比例）。关键帧≥2时，游戏内将用JS实时插值播放（AE式），并覆盖预设动画。</p>
+  </div>`;
+}
 function charEditHTML(c){
   if(!c)return '<p class="hint">在左侧新建或选择一个人物。</p>';
   const dotColor=charCutColor?('rgb('+charCutColor.r+','+charCutColor.g+','+charCutColor.b+')'):'#ccc';
+  const layers=(c.overlays||[]).map((o,i)=>layerRowHTML(o,i,(c.overlays||[]).length)).join('');
   const acts=(c.actions||[]).map((a,i)=>`<div class="act-row">
     <input type="text" id="actName${i}" value="${esc(a.name)}" placeholder="动作名" style="width:70px">
     <input type="text" id="actImg${i}" value="${esc(a.image)}" placeholder="图片URL（留空=基础图）" style="min-width:120px">
     <select id="actAnim${i}">${animOptions(a.anim)}</select>
     <input type="range" id="actSpeed${i}" min="0.2" max="3" step="0.1" value="${a.speed}" title="速度倍率">
+    <button class="mini" id="kfBtn${i}" title="关键帧动画">🎞</button>
     <button class="mini danger" id="actDel${i}">✕</button>
-  </div>`).join('');
+  </div>
+  ${keyframeActionId===a.id?kfEditorHTML(a):''}`).join('');
   return `
   <div class="insp-sec">
     <h4>📌 基本信息 <span><button class="mini danger" id="charDelete">删除人物</button></span></h4>
@@ -636,10 +691,16 @@ function charEditHTML(c){
     ${c.baseImage?'<div class="char-cut-box"><canvas id="charCutCanvas"></canvas><div class="cut-tools"><span class="color-dot" id="cutColorDot" style="background:${dotColor}"></span><span>点击图片背景取色</span><label>容差 <input type="range" id="cutTolerance" min="0" max="100" value="${charCutTolerance}"></label><span id="cutTolVal">${charCutTolerance}</span><button id="cutApply" class="mini primary">应用抠图</button><button id="cutReset" class="mini">重置原图</button></div></div>':'<p class="hint">请先上传基础立绘。</p>'}
   </div>
   <div class="insp-sec">
+    <h4>🎨 PS图层（叠加素材）</h4>
+    ${layers}
+    <button id="lrAdd" class="mini primary">＋ 添加图层</button>
+    <p class="hint">图层按顺序叠加在基础立绘之上，类似PS图层：可调不透明度、显示/隐藏、上下移动。</p>
+  </div>
+  <div class="insp-sec">
     <h4>🎬 动作设计</h4>
     ${acts}
     <button id="charAddAction" class="mini primary">＋ 添加动作</button>
-    <p class="hint">每个动作可指定一张图片（留空则使用基础图）和一种播放动画。在演示模式中可为场景角色切换动作。</p>
+    <p class="hint">每个动作可指定一张图片（留空则使用基础图+图层）和一种播放动画。点 🎞 可编辑AE式关键帧。</p>
   </div>
   <div class="insp-sec">
     <h4>🧬 伪Live2D</h4>
@@ -672,14 +733,42 @@ function bindCharEdit(){
   const tol=$('#cutTolerance');if(tol)valInput(tol,()=>{charCutTolerance=parseInt(tol.value,10)||0;const tv=$('#cutTolVal');if(tv)tv.textContent=charCutTolerance;});
   const apply=$('#cutApply');if(apply)apply.onclick=()=>charCutApply(c);
   const reset=$('#cutReset');if(reset)reset.onclick=()=>{c.baseImage=c.originalImage||c.baseImage;charCutImg=null;charCutColor=null;renderCharEdit();saveEditor();toast('已重置为原图');};
+  (c.overlays||[]).forEach((o,i)=>{
+    const nm=$('#lrName'+i);if(nm)nm.oninput=()=>{o.name=nm.value;saveEditor();};
+    const im=$('#lrImg'+i);if(im)im.oninput=()=>{o.image=im.value.trim();saveEditor();};
+    const op=$('#lrOp'+i);if(op)op.oninput=()=>{o.opacity=parseFloat(op.value)||0;saveEditor();};
+    const vs=$('#lrVis'+i);if(vs)vs.onchange=()=>{o.visible=vs.checked;saveEditor();};
+    const u=$('#lrUp'+i);if(u)u.onclick=()=>{if(i>0){const arr=c.overlays;[arr[i-1],arr[i]]=[arr[i],arr[i-1]];renderCharEdit();saveEditor();}};
+    const dn=$('#lrDown'+i);if(dn)dn.onclick=()=>{if(i<c.overlays.length-1){const arr=c.overlays;[arr[i+1],arr[i]]=[arr[i],arr[i+1]];renderCharEdit();saveEditor();}};
+    const de=$('#lrDel'+i);if(de)de.onclick=()=>{c.overlays.splice(i,1);renderCharEdit();saveEditor();};
+  });
+  const la=$('#lrAdd');if(la)la.onclick=()=>{c.overlays=c.overlays||[];c.overlays.push({id:uid('ov'),name:'图层'+(c.overlays.length+1),image:'',opacity:1,visible:true});renderCharEdit();saveEditor();};
   (c.actions||[]).forEach((a,i)=>{
     const nm=$('#actName'+i);if(nm)nm.oninput=()=>{a.name=nm.value;saveEditor();};
     const im=$('#actImg'+i);if(im)im.oninput=()=>{a.image=im.value.trim();saveEditor();};
     const an=$('#actAnim'+i);if(an)an.onchange=()=>{a.anim=an.value;saveEditor();};
     const sp=$('#actSpeed'+i);if(sp)sp.oninput=()=>{a.speed=parseFloat(sp.value)||1;saveEditor();};
+    const kb=$('#kfBtn'+i);if(kb)kb.onclick=()=>{keyframeActionId=(keyframeActionId===a.id?null:a.id);renderCharEdit();saveEditor();};
     const del2=$('#actDel'+i);if(del2)del2.onclick=()=>{c.actions.splice(i,1);renderCharEdit();saveEditor();};
+    if(keyframeActionId===a.id){
+      a.keyframes=a.keyframes||[];
+      const dur=$('#kfDur');if(dur)dur.oninput=()=>{a.duration=parseFloat(dur.value)||2;saveEditor();};
+      const lp=$('#kfLoop');if(lp)lp.onchange=()=>{a.loop=lp.checked;saveEditor();};
+      const add=$('#kfAdd');if(add)add.onclick=()=>{a.keyframes.push({t:1,x:0,y:0,scale:1,opacity:1,rotate:0,ease:'linear'});renderCharEdit();saveEditor();};
+      const cl2=$('#kfClose');if(cl2)cl2.onclick=()=>{keyframeActionId=null;renderCharEdit();};
+      a.keyframes.forEach((k,j)=>{
+        const t=$('#kfT'+j);if(t)t.oninput=()=>{k.t=parseFloat(t.value)||0;saveEditor();};
+        const x=$('#kfX'+j);if(x)x.oninput=()=>{k.x=parseFloat(x.value)||0;saveEditor();};
+        const y=$('#kfY'+j);if(y)y.oninput=()=>{k.y=parseFloat(y.value)||0;saveEditor();};
+        const sc2=$('#kfS'+j);if(sc2)sc2.oninput=()=>{k.scale=parseFloat(sc2.value)||1;saveEditor();};
+        const o=$('#kfO'+j);if(o)o.oninput=()=>{k.opacity=parseFloat(o.value)||0;saveEditor();};
+        const r=$('#kfR'+j);if(r)r.oninput=()=>{k.rotate=parseFloat(r.value)||0;saveEditor();};
+        const e2=$('#kfE'+j);if(e2)e2.onchange=()=>{k.ease=e2.value;saveEditor();};
+        const de2=$('#kfDel'+j);if(de2)de2.onclick=()=>{a.keyframes.splice(j,1);renderCharEdit();saveEditor();};
+      });
+    }
   });
-  const add=$('#charAddAction');if(add)add.onclick=()=>{c.actions.push({id:uid('act'),name:'动作'+(c.actions.length+1),image:'',anim:'idle',speed:1});renderCharEdit();saveEditor();};
+  const add=$('#charAddAction');if(add)add.onclick=()=>{c.actions.push({id:uid('act'),name:'动作'+(c.actions.length+1),image:'',anim:'idle',speed:1,duration:2,loop:true,keyframes:[]});renderCharEdit();saveEditor();};
   const lv=$('#charLive2d');if(lv)lv.onchange=()=>{c.live2d=lv.checked;saveEditor();};
 }
 function valInput(el,fn){el.oninput=fn;}
@@ -987,14 +1076,50 @@ function getCharVisual(ch){
     const lib=getLibCharP(ch.charId);
     if(lib){
       const act=(lib.actions||[]).find(a=>a.id===ch.actionId)||(lib.actions&&lib.actions[0])||null;
-      return {name:lib.name,image:(act&&act.image)?act.image:lib.baseImage,anim:act?act.anim:'none',speed:act?act.speed:1,live2d:!!lib.live2d};
+      return {name:lib.name,image:(act&&act.image)?act.image:lib.baseImage,anim:act?act.anim:'none',speed:act?act.speed:1,live2d:!!lib.live2d,overlays:lib.overlays||[],keyframes:(act&&act.keyframes)||[],duration:act?act.duration:2,loop:act?act.loop:true};
     }
   }
-  return {name:ch.name||'角色',image:ch.image||'',anim:'none',speed:1,live2d:false};
+  return {name:ch.name||'角色',image:ch.image||'',anim:'none',speed:1,live2d:false,overlays:[],keyframes:[],duration:2,loop:true};
+}
+let charAnimItems=[],charAnimRaf=null;
+function applyEase(k,e){
+  if(e==='easeIn')return k*k;
+  if(e==='easeOut')return 1-(1-k)*(1-k);
+  if(e==='easeInOut')return k<0.5?2*k*k:1-((-2*k+2)**2)/2;
+  return k;
+}
+function applyKeyframeItem(it,now){
+  const kfs=it.keyframes;if(!kfs||kfs.length<2)return;
+  const dur=Math.max(0.1,it.duration||2);
+  let t=((now-it.t0)/1000)/dur;
+  if(it.loop){t=t%1;}else{t=Math.min(1,t);}
+  let k0=kfs[0],k1=kfs[kfs.length-1];
+  for(let i=0;i<kfs.length-1;i++){if(t>=kfs[i].t&&t<=kfs[i+1].t){k0=kfs[i];k1=kfs[i+1];break;}}
+  let local=Math.max(0,Math.min(1,(t-k0.t)/Math.max(0.0001,k1.t-k0.t)));
+  local=applyEase(local,k0.ease||'linear');
+  const x=k0.x+(k1.x-k0.x)*local;
+  const y=k0.y+(k1.y-k0.y)*local;
+  const s=k0.scale+(k1.scale-k0.scale)*local;
+  const o=k0.opacity+(k1.opacity-k0.opacity)*local;
+  const r=k0.rotate+(k1.rotate-k0.rotate)*local;
+  it.el.style.transform='translate('+x+'px,'+y+'px) scale('+s+') rotate('+r+'deg)';
+  it.el.style.opacity=o;
+}
+function startCharAnimLoop(){
+  if(charAnimRaf)return;
+  const loop=()=>{
+    const now=performance.now();
+    charAnimItems=charAnimItems.filter(it=>it.el.isConnected);
+    let active=false;
+    charAnimItems.forEach(it=>{if(it.el.isConnected){active=true;applyKeyframeItem(it,now);}});
+    if(active){charAnimRaf=requestAnimationFrame(loop);}else{charAnimRaf=null;}
+  };
+  charAnimRaf=requestAnimationFrame(loop);
 }
 function renderCharacters(){
   const layer=$('#characterLayer');if(!layer)return;
   layer.innerHTML='';
+  charAnimItems=[];
   const sc=currentScene();if(!sc||!sc.characters||!sc.characters.length)return;
   sc.characters.forEach((ch,i)=>{
     const vis=getCharVisual(ch);
@@ -1003,20 +1128,72 @@ function renderCharacters(){
     if(P.demoMode&&P.demoSelection&&P.demoSelection.type==='char'&&P.demoSelection.index===i)div.classList.add('selected');
     div.dataset.index=i;
     div.style.left=ch.x+'%';div.style.top=ch.y+'%';div.style.opacity=(ch.opacity??1);
+    div.style.transform='translate(-50%,-100%) rotate('+(ch.rotate||0)+'deg)';
     const h=(55*ch.scale).toFixed(1);
-    const inner=document.createElement('div');inner.className='char-anim';
-    if(vis.anim&&vis.anim!=='none')inner.classList.add('anim-'+vis.anim);
-    inner.style.height=h+'vh';
+    const stack=document.createElement('div');stack.className='char-stack';stack.style.height=h+'vh';stack.style.position='relative';
+    const baseLayer=document.createElement('div');baseLayer.className='char-layer';baseLayer.style.position='relative';baseLayer.style.height='100%';
     if(vis.image){
-      const img=document.createElement('img');img.src=vis.image;img.alt=vis.name;img.draggable=false;img.style.height='100%';inner.appendChild(img);
+      const img=document.createElement('img');img.src=vis.image;img.alt=vis.name;img.draggable=false;img.style.height='100%';baseLayer.appendChild(img);
     }else{
-      inner.style.width=(h*0.75)+'vh';
-      const ph=document.createElement('div');ph.className='char-placeholder';ph.style.width='100%';ph.style.height='100%';ph.textContent=vis.name;inner.appendChild(ph);
+      const ph=document.createElement('div');ph.className='char-placeholder';ph.style.width='100%';ph.style.height='100%';ph.textContent=vis.name;baseLayer.appendChild(ph);
     }
-    div.appendChild(inner);
+    stack.appendChild(baseLayer);
+    (vis.overlays||[]).forEach((ov,oi)=>{
+      if(!ov.visible||!ov.image)return;
+      const ovd=document.createElement('div');ovd.className='char-layer char-layer-ov';
+      ovd.style.position='absolute';ovd.style.left='50%';ovd.style.bottom='0';ovd.style.transform='translateX(-50%)';
+      ovd.style.height='100%';ovd.style.opacity=(ov.opacity??1);ovd.style.zIndex=oi+2;
+      const im=document.createElement('img');im.src=ov.image;im.draggable=false;im.style.height='100%';ovd.appendChild(im);
+      stack.appendChild(ovd);
+    });
+    if(vis.keyframes&&vis.keyframes.length>=2){
+      charAnimItems.push({el:stack,keyframes:vis.keyframes,duration:vis.duration,loop:vis.loop,t0:performance.now()});
+    }else if(vis.anim&&vis.anim!=='none'){
+      stack.classList.add('anim-'+vis.anim);
+    }
+    div.appendChild(stack);
     if(P.demoMode){
+      const sel=!!(P.demoSelection&&P.demoSelection.type==='char'&&P.demoSelection.index===i);
+      if(sel){
+        const scH=document.createElement('div');scH.className='gizmo gizmo-scale';scH.textContent='↘';
+        const roH=document.createElement('div');roH.className='gizmo gizmo-rotate';roH.textContent='↻';
+        div.appendChild(scH);div.appendChild(roH);
+        scH.addEventListener('pointerdown',e=>{
+          e.stopPropagation();e.preventDefault();
+          const rect=div.getBoundingClientRect();
+          const anchorX=rect.left+rect.width/2,anchorY=rect.top+rect.height;
+          const startDist=Math.max(1,Math.hypot(e.clientX-anchorX,e.clientY-anchorY));
+          const startScale=ch.scale;
+          const move=e2=>{
+            const dist=Math.max(1,Math.hypot(e2.clientX-anchorX,e2.clientY-anchorY));
+            ch.scale=Math.max(0.2,Math.min(3,startScale*dist/startDist));
+            stack.style.height=(55*ch.scale).toFixed(1)+'vh';
+            updateDemoLabel('dpChScaleVal',ch.scale);
+            const sel2=$('#dpChScale');if(sel2)sel2.value=ch.scale;
+          };
+          const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);pushSceneToEditor(currentScene());renderCharacters();};
+          window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+        });
+        roH.addEventListener('pointerdown',e=>{
+          e.stopPropagation();e.preventDefault();
+          const rect=div.getBoundingClientRect();
+          const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+          const startAngle=Math.atan2(e.clientX-cx,-(e.clientY-cy))*180/Math.PI;
+          const startRotate=ch.rotate||0;
+          const move=e2=>{
+            const ang=Math.atan2(e2.clientX-cx,-(e2.clientY-cy))*180/Math.PI;
+            ch.rotate=Math.max(-180,Math.min(180,startRotate+(ang-startAngle)));
+            div.style.transform='translate(-50%,-100%) rotate('+ch.rotate+'deg)';
+            updateDemoLabel('dpChRotateVal',ch.rotate);
+            const sel2=$('#dpChRotate');if(sel2)sel2.value=ch.rotate;
+          };
+          const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);pushSceneToEditor(currentScene());};
+          window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+        });
+      }
       div.addEventListener('click',e=>{e.stopPropagation();selectDemoCharacter(i);});
       div.addEventListener('pointerdown',e=>{
+        if(e.target.closest('.gizmo'))return;
         e.stopPropagation();e.preventDefault();
         selectDemoCharacter(i);
         const layerRect=layer.getBoundingClientRect();
@@ -1038,6 +1215,7 @@ function renderCharacters(){
     }
     layer.appendChild(div);
   });
+  startCharAnimLoop();
 }
 function pushSceneToEditor(sc){
   if(!sc)return;
@@ -1080,6 +1258,7 @@ function demoPanelHTML(){
       <div class="dp-row"><label>垂直位置 Y <span class="dp-val" id="dpChYVal">${ch.y}</span></label><input type="range" id="dpChY" min="0" max="100" step="0.5" value="${ch.y}"></div>
       <div class="dp-row"><label>缩放 <span class="dp-val" id="dpChScaleVal">${ch.scale}</span></label><input type="range" id="dpChScale" min="0.2" max="3" step="0.05" value="${ch.scale}"></div>
       <div class="dp-row"><label>透明度 <span class="dp-val" id="dpChOpacityVal">${ch.opacity}</span></label><input type="range" id="dpChOpacity" min="0" max="1" step="0.05" value="${ch.opacity}"></div>
+      <div class="dp-row"><label>旋转 <span class="dp-val" id="dpChRotateVal">${ch.rotate||0}</span>°</label><input type="range" id="dpChRotate" min="-180" max="180" step="1" value="${ch.rotate||0}"></div>
     </div>`;
   }
 if(sel.type==='textbox'){
@@ -1170,6 +1349,7 @@ function bindDemoPanel(){
     bindRange('dpChY',v=>{ch.y=v;updateDemoLabel('dpChYVal',v);renderCharacters();pushSceneToEditor(sc);});
     bindRange('dpChScale',v=>{ch.scale=v;updateDemoLabel('dpChScaleVal',v);renderCharacters();pushSceneToEditor(sc);});
     bindRange('dpChOpacity',v=>{ch.opacity=v;updateDemoLabel('dpChOpacityVal',v);renderCharacters();pushSceneToEditor(sc);});
+    bindRange('dpChRotate',v=>{ch.rotate=v;updateDemoLabel('dpChRotateVal',v);renderCharacters();pushSceneToEditor(sc);});
   }else if(sel.type==='textbox'){
     const u=P.project.ui.textbox;
     bindUICheck('dpTbShow',u,'show');
