@@ -113,7 +113,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 .bp-entry b{color:#FB7299}
 #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#FFFFFF;border:1px solid #E3E5E7;color:#18191C;padding:10px 20px;border-radius:10px;z-index:300;font-size:14px;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 #characterLayer{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
-.char-sprite{position:absolute;transform:translate(-50%,-100%);pointer-events:none;user-select:none;text-align:center}
+.char-sprite{position:absolute;transform:translate(-50%,-100%);pointer-events:none;user-select:none;text-align:center;transition:opacity .25s ease, filter .25s ease}
 .char-sprite img{display:block;width:auto;object-fit:contain;filter:drop-shadow(0 10px 22px rgba(0,0,0,.18))}
 .char-placeholder{display:flex;align-items:center;justify-content:center;background:#FFFFFF;border:2px dashed #FB7299;border-radius:14px;color:#61666D;font-size:14px;box-shadow:0 10px 22px rgba(0,0,0,.12)}
 #gameScreen.demo-mode .char-sprite{pointer-events:auto;cursor:grab}
@@ -413,7 +413,7 @@ function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlag
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
-  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.dialogues=s.dialogues||[];s.dialogues.forEach(d=>{d.speaker=d.speaker||'';d.text=d.text||'';});s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;c.dialogueIndex=c.dialogueIndex??0;});});
+  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.dialogues=s.dialogues||[];s.dialogues.forEach(d=>{d.speaker=d.speaker||'';d.text=d.text||'';d.charId=d.charId||'';d.actionId=d.actionId||'';});s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;c.dialogueIndex=c.dialogueIndex??0;});});
   p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.overlays=c.overlays||[];c.overlays.forEach(o=>{o.name=o.name||'图层';o.image=o.image||'';o.opacity=o.opacity??1;o.visible=o.visible!==false;});c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;a.duration=a.duration??2;a.loop=a.loop!==false;a.keyframes=a.keyframes||[];a.keyframes.forEach(k=>{k.t=k.t??0;k.x=k.x??0;k.y=k.y??0;k.scale=k.scale??1;k.opacity=k.opacity??1;k.rotate=k.rotate??0;k.ease=k.ease||'linear';});});});
   const du={textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};
   p.ui=p.ui||{};
@@ -458,6 +458,16 @@ function flagRowHTML(r,owner,idx,flags){
     <button class="mini danger" data-role="delFlag" data-owner="${owner}" data-idx="${idx}">✕</button>
   </div>`;
 }
+function dialogueCharOptions(sc,sel){
+  return '<option value="">（自动匹配说话人）</option>'+(sc.characters||[]).map(c=>`<option value="${esc(c.id)}" ${sel===c.id?'selected':''}>${esc(c.name||'未命名')}</option>`).join('');
+}
+function dialogueActionOptions(sc,d,i){
+  if(!d.charId)return '';
+  const ch=(sc.characters||[]).find(c=>c.id===d.charId);if(!ch)return '';
+  const lib=ch.charId?getLibChar(ch.charId):null;
+  if(!lib||!lib.actions||!lib.actions.length)return '';
+  return `<select data-role="dialogueAction" data-idx="${i}"><option value="">（默认动作）</option>${lib.actions.map(a=>`<option value="${esc(a.id)}" ${d.actionId===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>`;
+}
 function inspectorHTML(){
   const sc=selectedScene();
   if(!sc)return '<div class="hint">请在左侧创建或选择一个场景。</div>';
@@ -499,12 +509,13 @@ function inspectorHTML(){
     <h4>📝 对话编辑</h4>
     ${(sc.dialogues||[]).map((d,i)=>`<div class="choice-card" style="padding:8px">
       <div class="row"><input type="text" data-role="dialogueSpeaker" data-idx="${i}" value="${esc(d.speaker)}" placeholder="说话人（可空）" style="flex:1"><button class="mini" data-role="upDialogue" data-idx="${i}" ${i===0?'disabled':''}>↑</button><button class="mini" data-role="downDialogue" data-idx="${i}" ${i===(sc.dialogues||[]).length-1?'disabled':''}>↓</button><button class="mini danger" data-role="delDialogue" data-idx="${i}">✕</button></div>
+      <div class="row" style="margin-top:6px"><label style="font-size:11px;color:#C75C7E">演出角色：</label><select data-role="dialogueChar" data-idx="${i}" style="flex:1">${dialogueCharOptions(sc,d.charId)}</select>${dialogueActionOptions(sc,d,i)}</div>
       <textarea rows="2" data-role="dialogueText" data-idx="${i}" placeholder="台词…">${esc(d.text)}</textarea>
     </div>`).join('')}
     ${(sc.dialogues&&sc.dialogues.length)?'':`<textarea rows="3" data-field="text" placeholder="单条文本……">${esc(sc.text)}</textarea><p class="hint">${sc.text?'当前为单条文本模式，可点击下方按钮转为多组对话。':'暂无对话内容：可直接填写上方单条文本，或添加多组对话。'}</p>`}
     <div class="dp-btns"><button class="mini primary" data-role="addDialogue">＋ 添加对话</button>${(!sc.dialogues||!sc.dialogues.length)&&sc.text?`<button class="mini" data-role="convertDialogue">把当前单条文本转为多组对话</button>`:''}</div>
     <div class="chips">${flags.length?flags.map(f=>`<button type="button" class="chip" data-insert="{${esc(f)}}">{${esc(f)}}</button>`).join(''):''}<span class="hint">点击数值可插入变量，如 {小夜好感}，播放时自动替换。</span></div>
-    <p class="hint">多组对话按顺序播放；全部播完后进入选项 / 自动分支 / 下一场景。</p>
+    <p class="hint">多组对话按顺序播放；全部播完后进入选项 / 自动分支 / 下一场景。可指定演出角色与动作；未指定演出角色时，自动匹配说话人并高亮对应立绘，其余立绘压暗。</p>
   </div>
   <div class="insp-sec">
     <h4>🚪 结局</h4>
@@ -859,6 +870,8 @@ function handleInspectorChange(e){
   if(role==='bgImageUrl'){sc.bgImage=t.value.trim();saveEditor();return;}
   if(role==='dialogueSpeaker'){if((sc.dialogues||[])[idx])sc.dialogues[idx].speaker=t.value;saveEditor();return;}
   if(role==='dialogueText'){if((sc.dialogues||[])[idx])sc.dialogues[idx].text=t.value;saveEditor();return;}
+  if(role==='dialogueChar'){const d=(sc.dialogues||[])[idx];if(d){d.charId=t.value;renderInspector();}saveEditor();return;}
+  if(role==='dialogueAction'){const d=(sc.dialogues||[])[idx];if(d){d.actionId=t.value;}saveEditor();return;}
   if(role==='choiceText'){sc.choices[idx].text=t.value;}
   else if(role==='choiceTarget'){sc.choices[idx].target=t.value;renderFlow();}
   else if(role==='choiceCond'){sc.choices[idx].cond=t.value;}
@@ -871,7 +884,7 @@ function handleInspectorChange(e){
   saveEditor();
 }
 /* ---------------- 播放器 ---------------- */
-const P={project:null,sceneId:null,flags:{},backlog:[],readScenes:new Set(),history:[],typing:false,typeTimer:null,currentFullText:'',typeIndex:0,speed:15,auto:false,autoTimer:null,skipMode:null,skipTimer:null,pendingAdvance:null,currentChoices:[],sceneChoices:[],dialogueIndex:0,ending:null,panelMode:'save',unlockedEndings:[],demoMode:false,demoSelection:null};
+const P={project:null,sceneId:null,flags:{},backlog:[],readScenes:new Set(),history:[],typing:false,typeTimer:null,currentFullText:'',typeIndex:0,speed:15,auto:false,autoTimer:null,skipMode:null,skipTimer:null,pendingAdvance:null,currentChoices:[],sceneChoices:[],dialogueIndex:0,activeCharId:null,activeActionId:null,ending:null,panelMode:'save',unlockedEndings:[],demoMode:false,demoSelection:null};
 function saveKey(i){return 'gvn_save_'+P.project.id+'_'+i;}
 function sysKey(){return 'gvn_sys_'+P.project.id;}
 function loadSys(){try{return JSON.parse(localStorage.getItem(sysKey()))||{unlockedEndings:[]};}catch(e){return{unlockedEndings:[]};}}
@@ -889,7 +902,7 @@ function updateAutoButton(){$('#btnAuto').classList.toggle('active',P.auto);}
 function openPlayer(proj){
   P.project=migrateProject(deepClone(proj));
   P.unlockedEndings=loadSys().unlockedEndings||[];
-  P.sceneId=null;P.flags={};P.backlog=[];P.readScenes=new Set();P.history=[];P.ending=null;
+  P.sceneId=null;P.flags={};P.backlog=[];P.readScenes=new Set();P.history=[];P.ending=null;P.activeCharId=null;P.activeActionId=null;
   stopAllTimers();P.auto=false;P.speed=15;
   P.demoMode=false;P.demoSelection=null;$('#demoPanel').classList.add('hidden');$('#gameScreen').classList.remove('demo-mode');
   $('#playerApp').classList.remove('hidden');$('#editorApp').style.display='none';
@@ -897,7 +910,7 @@ function openPlayer(proj){
 }
 function closePlayer(){stopAllTimers();P.demoMode=false;P.demoSelection=null;$('#demoPanel').classList.add('hidden');$('#gameScreen').classList.remove('demo-mode');$('#playerApp').classList.add('hidden');$('#editorApp').style.display='';}
 function showTitle(){
-  $('#gameScreen').classList.add('hidden');$('#gameScreen').classList.remove('demo-mode');$('#titleScreen').classList.remove('hidden');$('#endingScreen').classList.add('hidden');$('#demoPanel').classList.add('hidden');P.demoMode=false;P.demoSelection=null;
+  $('#gameScreen').classList.add('hidden');$('#gameScreen').classList.remove('demo-mode');$('#titleScreen').classList.remove('hidden');$('#endingScreen').classList.add('hidden');$('#demoPanel').classList.add('hidden');P.demoMode=false;P.demoSelection=null;P.activeCharId=null;P.activeActionId=null;
   $('#titleText').textContent=P.project.title||'未命名作品';
   const ends=P.unlockedEndings;
   $('#titleSub').textContent=ends.length?('已解锁结局：'+ends.length+' 个'):'尚未解锁任何结局';
@@ -905,7 +918,7 @@ function showTitle(){
   $('#titleEndings').innerHTML=ends.map(k=>{const p=k.split('|');return `<span style="background:#FFFFFF;border:1px solid #E3E5E7;border-radius:999px;padding:4px 12px;font-size:12px;color:#61666D">${esc(kindMap[p[0]]||'结局')} · ${esc(p[1]||'END')}</span>`;}).join('');
 }
 function startNewGame(){
-  P.sceneId=null;P.flags=deepClone(P.project.flags||{});P.backlog=[];P.readScenes=new Set();P.history=[];P.ending=null;P.currentChoices=[];P.sceneChoices=[];P.dialogueIndex=0;
+  P.sceneId=null;P.flags=deepClone(P.project.flags||{});P.backlog=[];P.readScenes=new Set();P.history=[];P.ending=null;P.currentChoices=[];P.sceneChoices=[];P.dialogueIndex=0;P.activeCharId=null;P.activeActionId=null;
   stopAllTimers();P.auto=false;
   $('#titleScreen').classList.add('hidden');$('#endingScreen').classList.add('hidden');$('#gameScreen').classList.remove('hidden');
   $('#gameScreen').classList.remove('demo-mode');$('#demoPanel').classList.add('hidden');P.demoMode=false;P.demoSelection=null;
@@ -927,6 +940,23 @@ function currentDialogues(){
   if(sc.text&&sc.text.trim())return [{speaker:sc.speaker||'',text:sc.text}];
   return [];
 }
+function currentDialogue(){
+  const dlg=currentDialogues();return dlg[P.dialogueIndex]||null;
+}
+function dialogueChar(sc,d){
+  if(!sc||!d)return null;
+  const chars=sc.characters||[];if(!chars.length)return null;
+  if(d.charId){const c=chars.find(c=>c.id===d.charId);if(c)return c;}
+  const sp=(d.speaker||'').trim();if(!sp)return null;
+  return chars.find(c=>(c.name||'').trim()===sp)||chars.find(c=>{const v=getCharVisual(c);return (v.name||'').trim()===sp;})||null;
+}
+function applyDialogueCast(d){
+  const sc=currentScene();
+  const ch=dialogueChar(sc,d);
+  P.activeCharId=ch?ch.id:null;
+  P.activeActionId=(ch&&d&&d.actionId)?d.actionId:null;
+  renderCharacters();
+}
 function enterScene(id,choiceFlags){
   const sc=getSceneP(id);if(!sc){toast('缺少场景：'+id);return;}
   clearPending();stopAuto();stopTyping();
@@ -937,6 +967,7 @@ function enterScene(id,choiceFlags){
   P.readScenes.add(id);
   P.ending=null;
   P.dialogueIndex=0;
+  P.activeCharId=null;P.activeActionId=null;
   P.sceneChoices=computeChoices(sc);
   P.currentChoices=[];
   hideChoices();
@@ -953,6 +984,7 @@ function enterScene(id,choiceFlags){
 }
 function showDialogue(d){
   P.currentChoices=[];
+  applyDialogueCast(d);
   const displayText=interpolateText(d.text||'',P.flags);
   P.backlog.push({speaker:d.speaker||'',text:displayText,sceneId:P.sceneId,flags:deepClone(P.flags),readScenes:Array.from(P.readScenes),dialogueIndex:P.dialogueIndex});
   renderBacklogIfOpen();
@@ -1160,13 +1192,23 @@ function renderCharacters(){
   layer.innerHTML='';
   charAnimItems=[];
   const sc=currentScene();if(!sc||!sc.characters||!sc.characters.length)return;
+  const hasActive=!!P.activeCharId&&sc.characters.some(c=>c.id===P.activeCharId);
   sc.characters.forEach((ch,i)=>{
-    const vis=getCharVisual(ch);
+    let vis;
+    if(ch.id===P.activeCharId&&P.activeActionId){
+      const lib=getLibCharP(ch.charId);
+      vis=(lib&&(lib.actions||[]).some(a=>a.id===P.activeActionId))?getCharVisual(Object.assign({},ch,{actionId:P.activeActionId})):getCharVisual(ch);
+    }else{
+      vis=getCharVisual(ch);
+    }
+    const active=ch.id===P.activeCharId;
     const div=document.createElement('div');div.className='char-sprite';
+    if(active)div.classList.add('speaking');
     if(vis.live2d)div.classList.add('live2d');
     if(P.demoMode&&P.demoSelection&&P.demoSelection.type==='char'&&P.demoSelection.index===i)div.classList.add('selected');
     div.dataset.index=i;
-    div.style.left=ch.x+'%';div.style.top=ch.y+'%';div.style.opacity=(ch.opacity??1);
+    div.style.left=ch.x+'%';div.style.top=ch.y+'%';div.style.opacity=(ch.opacity??1)*(hasActive&&!active?0.45:1);
+    div.style.filter=active?'drop-shadow(0 0 18px rgba(251,114,153,.55))':'none';
     div.style.transform='translate(-50%,-100%) rotate('+(ch.rotate||0)+'deg)';
     const h=(55*ch.scale).toFixed(1);
     const stack=document.createElement('div');stack.className='char-stack';stack.style.height=h+'vh';stack.style.position='relative';
@@ -1447,10 +1489,13 @@ function toggleDemoMode(){
     if(P.typing)finishTyping();
     stopAllTimers();
     P.demoSelection=null;
+    P.activeCharId=null;P.activeActionId=null;
     $('#demoPanel').classList.remove('hidden');
   }else{
     P.demoSelection=null;
     $('#demoPanel').classList.add('hidden');
+    P.activeCharId=null;P.activeActionId=null;
+    applyDialogueCast(currentDialogue());
   }
   renderCharacters();renderDemoPanel();updateDemoButton();updateDemoUISelection();
 }
@@ -1520,7 +1565,9 @@ function back(){
   syncChoicesAfterRestore();
   $('#endingScreen').classList.add('hidden');
   hideChoices();
+  P.activeCharId=null;P.activeActionId=null;
   renderGame();
+  applyDialogueCast(currentDialogue());
   const last=P.backlog[P.backlog.length-1];
   showText(last?last.speaker:'',last?last.text:'',true);
   if(P.currentChoices.length)renderChoices();
@@ -1562,7 +1609,10 @@ function jumpToBacklog(idx){
   syncChoicesAfterRestore();
   $('#endingScreen').classList.add('hidden');
   $('#backlogPanel').classList.add('hidden');
-  hideChoices();renderGame();
+  hideChoices();
+  P.activeCharId=null;P.activeActionId=null;
+  renderGame();
+  applyDialogueCast(currentDialogue());
   showText(en.speaker||'',en.text||'',true);
   if(P.currentChoices.length)renderChoices();
 }
@@ -1605,7 +1655,10 @@ function loadFromSlot(i){
   $('#endingScreen').classList.add('hidden');$('#savePanel').classList.add('hidden');$('#demoPanel').classList.add('hidden');
   $('#gameScreen').classList.remove('hidden');$('#gameScreen').classList.remove('demo-mode');P.demoMode=false;P.demoSelection=null;
   $('#titleScreen').classList.add('hidden');
-  hideChoices();renderGame();
+  hideChoices();
+  P.activeCharId=null;P.activeActionId=null;
+  renderGame();
+  applyDialogueCast(currentDialogue());
   const last=P.backlog[P.backlog.length-1];
   showText(last?last.speaker:'',last?last.text:'',true);
   if(P.currentChoices.length)renderChoices();
