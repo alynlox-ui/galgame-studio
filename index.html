@@ -26,6 +26,7 @@ label{font-size:12px;color:#61666D}
 header{height:58px;background:#FFFFFF;border-bottom:1px solid #E3E5E7;display:flex;align-items:center;gap:8px;padding:0 14px;flex:none;flex-wrap:wrap}
 header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;color:#FB7299}
 #projectTitle{width:220px;font-weight:600}
+.draft-status{font-size:11px;color:#9499A0;white-space:nowrap}
 #btnPlay{background:#FB7299}
 #btnPlay:hover{background:#FC8BAB}
 .editor-main{display:flex;flex:1;min-height:0}
@@ -74,6 +75,8 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 #playerApp{position:fixed;inset:0;z-index:100;background:#F4F5F7}
 #gameScreen{position:absolute;inset:0}
 #gameBg{position:absolute;inset:0;transition:background .5s}
+#videoLayer{position:absolute;inset:0;z-index:1;pointer-events:none;background:#000}
+#videoLayer video{width:100%;height:100%;object-fit:cover;display:block}
 #gameBg::after{content:'';position:absolute;inset:0;background:none}
 #topbar{position:absolute;top:0;left:0;right:0;display:flex;gap:6px;padding:10px 14px;background:#FFFFFF;border-bottom:1px solid #E3E5E7;z-index:10;flex-wrap:wrap}
 #topbar button{background:#FFFFFF;border:1px solid #E3E5E7;font-size:12px}
@@ -202,6 +205,8 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <button id="btnAutoLayout">自动布局</button>
     <button id="btnAi">🤖 AI 辅助</button>
     <span style="flex:1"></span>
+    <button id="btnSaveDraft" title="将当前项目保存为浏览器本地草稿，关闭页面后再次打开可继续编辑">💾 保存草稿</button>
+    <span id="draftStatus" class="draft-status"></span>
     <button id="btnExport">导出 JSON</button>
     <button id="btnImport">导入 JSON</button>
     <button id="btnPlay" class="primary">▶ 运行测试</button>
@@ -230,6 +235,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 <div id="playerApp" class="hidden">
   <div id="gameScreen" class="hidden">
     <div id="gameBg"></div>
+    <div id="videoLayer" class="hidden"><video loop playsinline></video></div>
     <div id="characterLayer"></div>
     <div id="topbar">
       <button id="btnBackEditor">← 返回编辑器</button>
@@ -320,16 +326,34 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <h3>🤖 AI 辅助（生图 / 文本）</h3>
     <p class="hint">接入你自己的 OpenAI 兼容 API（OpenAI、DeepSeek、通义、智谱等）。API Key 仅保存在浏览器 localStorage，不会上传到本项目服务器。</p>
     <div class="insp-sec" style="margin-top:10px">
-      <h4>🔑 API 设置</h4>
+      <h4>🖼 图像生成 API</h4>
       <div class="ai-grid">
-        <label>Base URL<input id="aiBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"></label>
-        <label>API Key<input id="aiKey" type="password" placeholder="sk-..." spellcheck="false"></label>
-        <label>图像模型<input id="aiImageModel" type="text" placeholder="gpt-image-1 / dall-e-3" spellcheck="false"></label>
-        <label>图像路径<input id="aiImagePath" type="text" placeholder="/images/generations" spellcheck="false"></label>
-        <label>图像返回格式<select id="aiImgFormat"><option value="b64_json">b64_json（本地保存）</option><option value="url">url（外链）</option><option value="">不设置（由 API 决定）</option></select></label>
-        <label>尺寸<select id="aiSize"><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option><option>1792x1024</option><option>1024x1792</option></select></label>
-        <label>文本模型<input id="aiTextModel" type="text" placeholder="gpt-4o-mini / deepseek-chat" spellcheck="false"></label>
-        <label>文本路径<input id="aiTextPath" type="text" placeholder="/chat/completions" spellcheck="false"></label>
+        <label>Base URL<input id="aiImageBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"></label>
+        <label>API Key<input id="aiImageKey" type="password" placeholder="sk-..." spellcheck="false"></label>
+        <label>模型<input id="aiImageModel" type="text" placeholder="gpt-image-1 / dall-e-3" spellcheck="false"></label>
+        <label>路径<input id="aiImagePath" type="text" placeholder="/images/generations" spellcheck="false"></label>
+        <label>返回格式<select id="aiImageFormat"><option value="b64_json">b64_json（本地保存）</option><option value="url">url（外链）</option><option value="">不设置（由 API 决定）</option></select></label>
+        <label>尺寸<select id="aiImageSize"><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option><option>1792x1024</option><option>1024x1792</option></select></label>
+      </div>
+    </div>
+    <div class="insp-sec">
+      <h4>🎥 视频生成 API</h4>
+      <div class="ai-grid">
+        <label>Base URL<input id="aiVideoBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"></label>
+        <label>API Key<input id="aiVideoKey" type="password" placeholder="sk-..." spellcheck="false"></label>
+        <label>模型<input id="aiVideoModel" type="text" placeholder="sora-2 / 可灵 / 即梦 / 自定义模型" spellcheck="false"></label>
+        <label>路径<input id="aiVideoPath" type="text" placeholder="/videos/generations" spellcheck="false"></label>
+        <label>尺寸<select id="aiVideoSize"><option>1280x720</option><option>1920x1080</option><option>1024x1792</option><option>1792x1024</option></select></label>
+        <label>应用到<select id="aiVideoTarget"><option value="sceneVideo">当前场景 CG 动画</option></select></label>
+      </div>
+    </div>
+    <div class="insp-sec">
+      <h4>📝 文本生成 API</h4>
+      <div class="ai-grid">
+        <label>Base URL<input id="aiTextBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"></label>
+        <label>API Key<input id="aiTextKey" type="password" placeholder="sk-..." spellcheck="false"></label>
+        <label>模型<input id="aiTextModel" type="text" placeholder="gpt-4o-mini / deepseek-chat" spellcheck="false"></label>
+        <label>路径<input id="aiTextPath" type="text" placeholder="/chat/completions" spellcheck="false"></label>
       </div>
     </div>
     <div class="insp-sec">
@@ -342,6 +366,13 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
       <label>画面描述<textarea id="aiPrompt" rows="3" placeholder="例如：黄昏的校门口，一位黑发少女微笑着挥手，二次元动画风格，高清立绘，背景虚化"></textarea></label>
       <div class="dp-btns" style="margin-top:8px"><button id="btnAiGenImage" class="primary">🪄 生成并应用</button> <span class="hint" id="aiImgStatus"></span></div>
       <div class="ai-result" id="aiImgResult"></div>
+    </div>
+    <div class="insp-sec">
+      <h4>🎥 AI 生成 CG 动画</h4>
+      <label>视频描述<textarea id="aiVideoPrompt" rows="3" placeholder="例如：黄昏教室，少女回头微笑，发丝轻动，电影感光影，二次元动画，高清，时长5秒"></textarea></label>
+      <div class="dp-btns" style="margin-top:8px"><button id="btnAiGenVideo" class="primary">🪄 生成并应用到当前场景</button> <span class="hint" id="aiVideoStatus"></span></div>
+      <div class="ai-result" id="aiVideoResult"></div>
+      <p class="hint">视频生成通常需要较长时间，请耐心等待。返回结果支持 url / b64_json / video_url 等常见字段。若你的 API 为异步任务模式，请先到服务商平台生成后，再把视频 URL 粘贴到场景的「CG 动画」输入框。</p>
     </div>
     <div class="insp-sec">
       <h4>📝 AI 文本辅助</h4>
@@ -362,7 +393,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
       3. <b>数值</b>：点击「数值管理」创建 Flag（如 好感度）。在「进入时设置数值」或选项里对其加减。条件示例：<code>好感度 &gt;= 3 &amp;&amp; 勇气 &gt; 1</code><br>
       4. <b>结局</b>：勾选「本场景是结局」，到达该场景即进入结局画面。<br>
       5. <b>播放</b>：点「运行测试」。播放器支持 快进 / 后退 / 历史 / 自动 / 存档读档（浏览器本地）。点击「🎭 演示模式」可在游戏画面中直接点击并拖动背景/角色立绘/文本框/角色名牌/选项区，上传图片，调整位置、缩放、透明度、配色、字号等 UI 样式，修改自动同步回项目。<br>
-      6. <b>导出</b>：项目可导出为 JSON 文件永久保存，也可再导入继续编辑。<br>
+      6. <b>草稿 / 导出</b>：编辑内容会自动保存为浏览器本地草稿，关闭或刷新后再次打开会自动恢复；点「💾 保存草稿」可立即保存。项目也可导出为 JSON 文件永久保存，或再导入继续编辑。<br>
       7. <b>AI 辅助</b>：点击「🤖 AI 辅助」可配置你自己的 OpenAI 兼容 API，使用个人 AI 进行生图 / 文本生成等辅助操作，API Key 仅保存在本地浏览器。
     </div>
     <div class="modal-actions"><button id="btnHelpClose" class="primary">知道了</button></div>
@@ -416,6 +447,8 @@ function validateCond(expr){try{evalCond(expr,{});return true;}catch(e){return f
 let project=null;
 let selectedSceneId=null;
 const editorSaveKey='gvn_editor_project_v1';
+const editorDraftApp='galgame-studio-draft';
+let draftInfo={savedAt:null,restored:false};
 function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#ffffff',bgImage:'',speaker:'',text:'',ending:null,setFlags:[],next:'',autoBranches:[],choices:[],dialogues:[],characters:[]};}
 function newProject(){
   const s=defaultScene('开始场景',100,120);s.text='欢迎使用 Galgame 制作工坊！在右侧面板编辑这段文本，然后点击 ▶ 运行测试。';
@@ -457,7 +490,7 @@ function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlag
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
-  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.dialogues=s.dialogues||[];s.dialogues.forEach(d=>{d.speaker=d.speaker||'';d.text=d.text||'';d.charId=d.charId||'';d.actionId=d.actionId||'';});s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;c.dialogueIndex=c.dialogueIndex??0;});});
+  p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.dialogues=s.dialogues||[];s.dialogues.forEach(d=>{d.speaker=d.speaker||'';d.text=d.text||'';d.charId=d.charId||'';d.actionId=d.actionId||'';});s.video=s.video||'';s.videoMuted=s.videoMuted!==false;s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;c.dialogueIndex=c.dialogueIndex??0;});});
   p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.overlays=c.overlays||[];c.overlays.forEach(o=>{o.name=o.name||'图层';o.image=o.image||'';o.opacity=o.opacity??1;o.visible=o.visible!==false;});c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;a.duration=a.duration??2;a.loop=a.loop!==false;a.keyframes=a.keyframes||[];a.keyframes.forEach(k=>{k.t=k.t??0;k.x=k.x??0;k.y=k.y??0;k.scale=k.scale??1;k.opacity=k.opacity??1;k.rotate=k.rotate??0;k.ease=k.ease||'linear';});});});
   const du={textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};
   p.ui=p.ui||{};
@@ -466,10 +499,49 @@ function migrateProject(p){
   Object.keys(oldMap).forEach(k=>{Object.keys(oldMap[k]).forEach(f=>{if(p.ui[k][f]===oldMap[k][f])p.ui[k][f]=du[k][f];});});
   return p;
 }
-function saveEditor(){try{localStorage.setItem(editorSaveKey,JSON.stringify(project));}catch(e){}}
+function saveEditor(){
+  if(!project)return false;
+  try{
+    draftInfo.savedAt=new Date().toISOString();
+    localStorage.setItem(editorSaveKey,JSON.stringify({app:editorDraftApp,version:1,project:project,selectedSceneId:selectedSceneId,savedAt:draftInfo.savedAt}));
+    updateDraftStatus();
+    return true;
+  }catch(e){
+    console.warn('草稿保存失败:',e);
+    updateDraftStatus(true);
+    return false;
+  }
+}
+function formatTime(iso){try{const d=new Date(iso);return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
+function updateDraftStatus(failed){
+  const el=$('#draftStatus');if(!el)return;
+  if(failed){el.textContent='⚠ 草稿保存失败';el.style.color='#F85A5A';}
+  else if(draftInfo.savedAt){el.textContent='已保存 '+formatTime(draftInfo.savedAt);el.style.color='#9499A0';}
+  else{el.textContent='未保存';el.style.color='#9499A0';}
+}
+function saveDraft(){
+  if(!project){toast('暂无可保存的项目');return;}
+  if(saveEditor()){toast('✅ 草稿已保存到浏览器本地（'+formatTime(draftInfo.savedAt)+'），关闭页面后可继续编辑');}
+  else{alert('草稿保存失败：浏览器本地存储空间不足或被禁用。\n建议使用「导出 JSON」把项目保存为文件。');}
+}
 function loadEditor(){
-  try{const raw=localStorage.getItem(editorSaveKey);if(raw){project=migrateProject(JSON.parse(raw));selectedSceneId=project.startScene||(project.scenes[0]&&project.scenes[0].id)||null;return;}}catch(e){}
-  project=migrateProject(sampleProject());selectedSceneId=project.startScene;
+  try{
+    const raw=localStorage.getItem(editorSaveKey);
+    if(raw){
+      const data=JSON.parse(raw);
+      const wrapped=(data&&data.app===editorDraftApp&&data.project&&Array.isArray(data.project.scenes))?data:null;
+      project=migrateProject(wrapped?wrapped.project:data);
+      if(wrapped&&wrapped.selectedSceneId&&project.scenes.some(s=>s.id===wrapped.selectedSceneId)){
+        selectedSceneId=wrapped.selectedSceneId;
+      }else{
+        selectedSceneId=project.startScene||(project.scenes[0]&&project.scenes[0].id)||null;
+      }
+      if(wrapped&&wrapped.savedAt)draftInfo.savedAt=wrapped.savedAt;
+      draftInfo.restored=true;
+      return;
+    }
+  }catch(e){console.warn('草稿读取失败:',e);}
+  project=migrateProject(sampleProject());selectedSceneId=project.startScene;draftInfo.restored=false;draftInfo.savedAt=null;
 }
 /* ---------------- 编辑器渲染 ---------------- */
 function renderAll(){renderSceneList();renderInspector();renderFlow();renderStartSel();}
@@ -547,6 +619,15 @@ function inspectorHTML(){
       <div class="dp-btns"><button type="button" class="mini primary" data-role="bgUpload">📁 上传背景图</button><button type="button" class="mini danger" data-role="bgClear">清除</button></div>
       <input type="text" data-role="bgImageUrl" value="${esc(sc.bgImage)}" placeholder="或粘贴图片 URL" spellcheck="false" style="margin-top:6px">
       ${sc.bgImage?`<img src="${esc(sc.bgImage)}" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;display:block">`:''}
+    </div>
+  </div>
+  <div class="insp-sec">
+    <h4>🎥 CG 动画 / 视频</h4>
+    <div class="insp-row"><label>视频 URL</label>
+      <div class="dp-btns"><button type="button" class="mini primary" data-role="videoUpload">📁 上传视频</button><button type="button" class="mini danger" data-role="videoClear">清除</button></div>
+      <input type="text" data-role="videoUrl" value="${esc(sc.video)}" placeholder="粘贴视频 URL，或使用上方 AI 生成 CG 动画" spellcheck="false" style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px"><input type="checkbox" data-field="videoMuted" ${sc.videoMuted!==false?'checked':''}> 静音播放（浏览器自动播放需要）</label>
+      ${sc.video?`<video src="${esc(sc.video)}" controls muted style="max-width:100%;max-height:140px;border-radius:8px;margin-top:6px;background:#000"></video><p class="hint">播放器进入本场景时会自动循环播放该 CG 动画。</p>`:''}
     </div>
   </div>
   <div class="insp-sec">
@@ -862,20 +943,20 @@ function insertAtCursor(input,text){
 const aiSaveKey='gvn_ai_settings_v1';
 let aiBusy=false;
 function getAiSettings(){
-  const def={baseUrl:'https://api.openai.com/v1',key:'',imageModel:'gpt-image-1',imagePath:'/images/generations',imgFormat:'b64_json',textModel:'gpt-4o-mini',textPath:'/chat/completions'};
-  try{const raw=localStorage.getItem(aiSaveKey);if(raw)Object.assign(def,JSON.parse(raw));}catch(e){}
+  const def={imageBaseUrl:'https://api.openai.com/v1',imageKey:'',imageModel:'gpt-image-1',imagePath:'/images/generations',imageFormat:'b64_json',imageSize:'1024x1024',videoBaseUrl:'https://api.openai.com/v1',videoKey:'',videoModel:'sora-2',videoPath:'/videos/generations',videoSize:'1280x720',textBaseUrl:'https://api.openai.com/v1',textKey:'',textModel:'gpt-4o-mini',textPath:'/chat/completions'};
+  try{const rawText=localStorage.getItem(aiSaveKey);if(rawText){const raw=JSON.parse(rawText)||{};Object.assign(def,raw);if(raw.baseUrl){if(!raw.imageBaseUrl){def.imageBaseUrl=raw.baseUrl;def.imageKey=raw.key||'';}if(!raw.videoBaseUrl){def.videoBaseUrl=raw.baseUrl;def.videoKey=raw.key||'';}if(!raw.textBaseUrl){def.textBaseUrl=raw.baseUrl;def.textKey=raw.key||'';}}if(raw.imgFormat&&!raw.imageFormat)def.imageFormat=raw.imgFormat;}}catch(e){}
   return def;
 }
 function saveAiSettings(){
   const s=getAiSettings();
-  const ids={baseUrl:'aiBaseUrl',key:'aiKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imgFormat:'aiImgFormat',textModel:'aiTextModel',textPath:'aiTextPath'};
+  const ids={imageBaseUrl:'aiImageBaseUrl',imageKey:'aiImageKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imageFormat:'aiImageFormat',imageSize:'aiImageSize',videoBaseUrl:'aiVideoBaseUrl',videoKey:'aiVideoKey',videoModel:'aiVideoModel',videoPath:'aiVideoPath',videoSize:'aiVideoSize',textBaseUrl:'aiTextBaseUrl',textKey:'aiTextKey',textModel:'aiTextModel',textPath:'aiTextPath'};
   Object.keys(ids).forEach(k=>{const el=$('#'+ids[k]);if(el)s[k]=el.value;});
   try{localStorage.setItem(aiSaveKey,JSON.stringify(s));}catch(e){}
   return s;
 }
 function fillAiSettings(){
   const s=getAiSettings();
-  const ids={baseUrl:'aiBaseUrl',key:'aiKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imgFormat:'aiImgFormat',textModel:'aiTextModel',textPath:'aiTextPath'};
+  const ids={imageBaseUrl:'aiImageBaseUrl',imageKey:'aiImageKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imageFormat:'aiImageFormat',imageSize:'aiImageSize',videoBaseUrl:'aiVideoBaseUrl',videoKey:'aiVideoKey',videoModel:'aiVideoModel',videoPath:'aiVideoPath',videoSize:'aiVideoSize',textBaseUrl:'aiTextBaseUrl',textKey:'aiTextKey',textModel:'aiTextModel',textPath:'aiTextPath'};
   Object.keys(ids).forEach(k=>{const el=$('#'+ids[k]);if(el)el.value=s[k];});
 }
 function renderAiCharSels(){
@@ -896,7 +977,7 @@ function renderAiCharSels(){
     actSel.innerHTML=(ch&&ch.actions&&ch.actions.length)?ch.actions.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join(''):'<option value="">（没有可选动作）</option>';
   }else{actWrap.classList.add('hidden');}
 }
-function openAiModal(){fillAiSettings();renderAiCharSels();$('#aiImgResult').innerHTML='';$('#aiTextResult').value='';$('#aiModal').classList.remove('hidden');}
+function openAiModal(){fillAiSettings();renderAiCharSels();$('#aiImgResult').innerHTML='';$('#aiVideoResult').innerHTML='';$('#aiTextResult').value='';$('#aiModal').classList.remove('hidden');}
 function closeAiModal(){saveAiSettings();$('#aiModal').classList.add('hidden');}
 async function aiFetchOpenAI(url,key,body){
   const headers={'Content-Type':'application/json'};
@@ -937,10 +1018,54 @@ function applyAiImage(imgData,target){
     saveEditor();toast('动作立绘已更新');return;
   }
 }
+function aiExtractVideoUrl(data){
+  if(!data)return null;
+  const candidates=[];
+  const arr=Array.isArray(data.data)?data.data:(Array.isArray(data.output)?data.output:(Array.isArray(data.videos)?data.videos:(Array.isArray(data.images)?data.images:[])));
+  if(arr.length){const it=arr[0];candidates.push(it.url,it.video_url,it.b64_json,it.video);}
+  candidates.push(data.url,data.video_url,data.b64_json,data.video);
+  for(const c of candidates){
+    if(typeof c==='string'&&c.trim()){
+      const t=c.trim();
+      if(t.startsWith('data:')||t.startsWith('http://')||t.startsWith('https://'))return t;
+      if(t.startsWith('/')||t.startsWith('./'))return t;
+      return 'data:video/mp4;base64,'+t;
+    }
+  }
+  return null;
+}
+function applyAiVideo(url){
+  const sc=selectedScene();if(!sc){toast('请先选择场景');return;}
+  sc.video=url;sc.videoMuted=true;renderInspector();saveEditor();toast('AI 视频已应用到当前场景 CG 动画');
+}
+async function aiGenerateVideo(){
+  if(aiBusy)return;
+  const s=saveAiSettings();
+  if(!s.videoKey){toast('请先填写视频生成 API Key');return;}
+  const prompt=$('#aiVideoPrompt').value.trim();
+  if(!prompt){toast('请填写视频描述');return;}
+  const target=$('#aiVideoTarget').value;
+  const sc=selectedScene();
+  if(target==='sceneVideo'&&!sc){toast('请先在左侧选择一个场景');return;}
+  const base=s.videoBaseUrl.replace(/\/+$/,'');
+  const body={model:s.videoModel,prompt,n:1,size:s.videoSize||'1280x720'};
+  const btn=$('#btnAiGenVideo');btn.disabled=true;$('#aiVideoStatus').textContent='视频生成中，通常需要较长时间…';
+  aiBusy=true;
+  try{
+    const data=await aiFetchOpenAI(base+(s.videoPath||'/videos/generations'),s.videoKey,body);
+    const url=aiExtractVideoUrl(data);
+    if(!url)throw new Error('返回中没有视频 URL，可能是异步任务，请到服务商平台获取结果后粘贴到场景视频 URL');
+    applyAiVideo(url);
+    $('#aiVideoResult').innerHTML=`<video src="${esc(url)}" controls muted style="max-width:100%;max-height:180px;border-radius:8px;background:#000"></video><p class="hint">已应用，进入该场景时自动播放。</p>`;
+    toast('AI 视频已应用');
+  }catch(e){
+    toast('AI 视频生成失败：'+e.message+(/Failed to fetch/i.test(e.message)?'（请检查 Base URL、网络，或该 API 是否允许浏览器 CORS）':''));
+  }finally{aiBusy=false;btn.disabled=false;$('#aiVideoStatus').textContent='';}
+}
 async function aiGenerateImage(){
   if(aiBusy)return;
   const s=saveAiSettings();
-  if(!s.key){toast('请先填写 API Key');return;}
+  if(!s.imageKey){toast('请先填写图像生成 API Key');return;}
   const prompt=$('#aiPrompt').value.trim();
   if(!prompt){toast('请填写画面描述');return;}
   const target=$('#aiImgTarget').value;
@@ -949,13 +1074,13 @@ async function aiGenerateImage(){
   if(target==='sceneChar'){const ch=(sc&&sc.characters||[]).find(c=>c.id===$('#aiCharSel').value);if(!ch){toast('当前场景没有可选角色');return;}}
   if((target==='libBase'||target==='libAction')&&!$('#aiCharSel').value){toast('请先在人物模块中新建人物');return;}
   if(target==='libAction'&&!$('#aiActSel').value){toast('请先选择动作');return;}
-  const base=s.baseUrl.replace(/\/+$/,'');
-  const body={model:s.imageModel,prompt,n:1,size:$('#aiSize').value};
-  if(s.imgFormat)body.response_format=s.imgFormat;
+  const base=s.imageBaseUrl.replace(/\/+$/,'');
+  const body={model:s.imageModel,prompt,n:1,size:s.imageSize||'1024x1024'};
+  if(s.imageFormat)body.response_format=s.imageFormat;
   const btn=$('#btnAiGenImage');btn.disabled=true;$('#aiImgStatus').textContent='生成中，请稍候…';
   aiBusy=true;
   try{
-    const data=await aiFetchOpenAI(base+(s.imagePath||'/images/generations'),s.key,body);
+    const data=await aiFetchOpenAI(base+(s.imagePath||'/images/generations'),s.imageKey,body);
     let imgData=null;
     const first=(data.data&&data.data[0])||data;
     if(first){if(first.b64_json)imgData='data:image/png;base64,'+first.b64_json;else if(first.url)imgData=first.url;}
@@ -975,15 +1100,15 @@ async function aiGenerateImage(){
 async function aiGenerateText(){
   if(aiBusy)return;
   const s=saveAiSettings();
-  if(!s.key){toast('请先填写 API Key');return;}
+  if(!s.textKey){toast('请先填写文本生成 API Key');return;}
   const prompt=$('#aiTextPrompt').value.trim();
   if(!prompt){toast('请填写文本需求');return;}
-  const base=s.baseUrl.replace(/\/+$/,'');
+  const base=s.textBaseUrl.replace(/\/+$/,'');
   const body={model:s.textModel,messages:[{role:'system',content:'你是一位 Galgame / 视觉小说编剧助手。只输出剧本正文，不要解释、不要额外信息。'},{role:'user',content:prompt}]};
   const btn=$('#btnAiGenText');btn.disabled=true;$('#aiTextStatus').textContent='生成中，请稍候…';
   aiBusy=true;
   try{
-    const data=await aiFetchOpenAI(base+(s.textPath||'/chat/completions'),s.key,body);
+    const data=await aiFetchOpenAI(base+(s.textPath||'/chat/completions'),s.textKey,body);
     const text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'';
     if(!text.trim())throw new Error('返回中没有文本');
     $('#aiTextResult').value=text.trim();
@@ -1016,6 +1141,8 @@ function handleInspectorClick(e){
   if(role==='downDialogue'&&idx<sc.dialogues.length-1){const arr=sc.dialogues;[arr[idx+1],arr[idx]]=[arr[idx],arr[idx+1]];renderInspector();saveEditor();return;}
   if(role==='bgUpload'){openImageFile(data=>{sc.bgImage=data;renderInspector();saveEditor();toast('背景图已上传');});return;}
   if(role==='bgClear'){sc.bgImage='';renderInspector();saveEditor();toast('已清除背景图');return;}
+  if(role==='videoUpload'){openVideoFile(data=>{sc.video=data;renderInspector();saveEditor();toast('CG 视频已上传');});return;}
+  if(role==='videoClear'){sc.video='';renderInspector();saveEditor();toast('已清除 CG 视频');return;}
   if(role==='addFlag'){sc.setFlags.push({flag:allFlagNames()[0]||'新数值',op:'+',value:1});renderInspector();return;}
   if(role==='delFlag'){sc.setFlags.splice(idx,1);renderInspector();return;}
   if(role==='addAuto'){sc.autoBranches.push({target:'',cond:''});renderInspector();return;}
@@ -1044,6 +1171,7 @@ function handleInspectorChange(e){
     const f=t.dataset.field;
     if(f==='endingEnabled'){sc.ending=t.checked?(sc.ending||{kind:'normal',title:''}):null;renderInspector();renderFlow();return;}
     if(f==='bg'){sc.bg=t.value;renderFlow();saveEditor();return;}
+    if(f==='videoMuted'){sc.videoMuted=t.checked;saveEditor();return;}
     if(f==='text'){sc.text=t.value;saveEditor();return;}
     if(f==='name'){sc.name=t.value;renderSceneList();renderFlow();saveEditor();return;}
     if(f==='speaker'){sc.speaker=t.value;saveEditor();return;}
@@ -1055,6 +1183,7 @@ function handleInspectorChange(e){
   const role=t.dataset.role;if(!role)return;
   const idx=t.dataset.idx!==undefined?+t.dataset.idx:null;const owner=t.dataset.owner!==undefined?t.dataset.owner:'';
   if(role==='bgImageUrl'){sc.bgImage=t.value.trim();saveEditor();return;}
+  if(role==='videoUrl'){sc.video=t.value.trim();saveEditor();return;}
   if(role==='dialogueSpeaker'){if((sc.dialogues||[])[idx])sc.dialogues[idx].speaker=t.value;saveEditor();return;}
   if(role==='dialogueText'){if((sc.dialogues||[])[idx])sc.dialogues[idx].text=t.value;saveEditor();return;}
   if(role==='dialogueChar'){const d=(sc.dialogues||[])[idx];if(d){d.charId=t.value;renderInspector();}saveEditor();return;}
@@ -1227,6 +1356,20 @@ function renderGame(){
     bg.style.backgroundImage='url("'+String(sc.bgImage).replace(/"/g,'\\"')+'")';
     bg.style.backgroundSize='cover';
     bg.style.backgroundPosition='center';
+  }
+  const vLayer=$('#videoLayer'),vEl=$('#videoLayer video');
+  if(sc&&sc.video){
+    if(vEl.dataset.src!==sc.video){vEl.src=sc.video;vEl.dataset.src=sc.video;}
+    vEl.muted=sc.videoMuted!==false;
+    vEl.loop=true;
+    vEl.playsInline=true;
+    vLayer.classList.remove('hidden');
+    const p=vEl.play&&vEl.play();
+    if(p&&p.catch)p.catch(()=>{});
+  }else{
+    vLayer.classList.add('hidden');
+    try{vEl.pause&&vEl.pause();}catch(e){}
+    if(vEl.dataset.src){try{vEl.removeAttribute&&vEl.removeAttribute('src');}catch(e){}vEl.dataset.src='';}
   }
   renderCharacters();
   applyUILayout();
@@ -1669,6 +1812,11 @@ function openImageFile(cb){
   inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{const url=fr.result;if(url&&url.length>2500000)toast('图片较大（>2.5MB），自动保存可能失败，建议压缩后使用');cb(url);};fr.readAsDataURL(f);};
   inp.click();
 }
+function openVideoFile(cb){
+  const inp=document.createElement('input');inp.type='file';inp.accept='video/*';
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{const url=fr.result;if(url&&url.length>4000000)toast('视频较大（>4MB），自动保存可能失败，建议使用外链 URL');cb(url);};fr.readAsDataURL(f);};
+  inp.click();
+}
 function toggleDemoMode(){
   P.demoMode=!P.demoMode;
   $('#gameScreen').classList.toggle('demo-mode',P.demoMode);
@@ -1903,8 +2051,9 @@ function importProject(file){
 /* ---------------- 初始化 ---------------- */
 function initEditorEvents(){
   $('#projectTitle').addEventListener('input',e=>{project.title=e.target.value;saveEditor();});
-  $('#btnNew').onclick=()=>{if(confirm('新建项目将清空当前内容（未导出的内容会丢失）。继续？')){newProject();renderAll();saveEditor();}};
-  $('#btnSample').onclick=()=>{if(confirm('载入示例项目将替换当前内容。继续？')){project=migrateProject(sampleProject());selectedSceneId=project.startScene;renderAll();saveEditor();toast('已载入示例');}};
+  $('#btnSaveDraft').onclick=saveDraft;
+  $('#btnNew').onclick=()=>{if(confirm('新建项目会覆盖当前浏览器中的草稿（建议先导出 JSON 备份）。继续？')){newProject();renderAll();saveEditor();toast('已新建项目');}};
+  $('#btnSample').onclick=()=>{if(confirm('载入示例项目会覆盖当前浏览器中的草稿（建议先导出 JSON 备份）。继续？')){project=migrateProject(sampleProject());selectedSceneId=project.startScene;renderAll();saveEditor();toast('已载入示例');}};
   $('#btnPlay').onclick=()=>openPlayer(project);
   $('#btnCharModule').onclick=()=>{project.characters=project.characters||[];selectedCharId=selectedCharId||((project.characters&&project.characters[0]&&project.characters[0].id)||null);renderCharModule();$('#charModal').classList.remove('hidden');};
   $('#btnCharAdd').onclick=()=>{
@@ -1918,11 +2067,12 @@ function initEditorEvents(){
   $('#btnAi').onclick=openAiModal;
   $('#btnAiClose').onclick=closeAiModal;
   $('#btnAiGenImage').onclick=aiGenerateImage;
+  $('#btnAiGenVideo').onclick=aiGenerateVideo;
   $('#btnAiGenText').onclick=aiGenerateText;
   $('#btnAiTextApply').onclick=aiApplyText;
   $('#aiImgTarget').addEventListener('change',renderAiCharSels);
   $('#aiCharSel').addEventListener('change',renderAiCharSels);
-  ['aiBaseUrl','aiKey','aiImageModel','aiImagePath','aiImgFormat','aiTextModel','aiTextPath'].forEach(id=>{const el=$('#'+id);if(el){el.addEventListener('input',saveAiSettings);el.addEventListener('change',saveAiSettings);}});
+  ['aiImageBaseUrl','aiImageKey','aiImageModel','aiImagePath','aiImageFormat','aiImageSize','aiVideoBaseUrl','aiVideoKey','aiVideoModel','aiVideoPath','aiVideoSize','aiTextBaseUrl','aiTextKey','aiTextModel','aiTextPath'].forEach(id=>{const el=$('#'+id);if(el){el.addEventListener('input',saveAiSettings);el.addEventListener('change',saveAiSettings);}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#aiModal').classList.contains('hidden'))closeAiModal();});
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
@@ -1994,6 +2144,9 @@ function boot(){
   initFlowEvents();
   applyFlowTransform();
   $('#projectTitle').value=project.title||'';
+  updateDraftStatus();
+  window.addEventListener('beforeunload',()=>{saveEditor();});
+  if(draftInfo.restored){toast('📝 已恢复上次编辑的草稿'+(draftInfo.savedAt?'（'+formatTime(draftInfo.savedAt)+'）':''));}
 }
 boot();
 </script>
