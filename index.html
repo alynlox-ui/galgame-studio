@@ -449,7 +449,8 @@ let selectedSceneId=null;
 const editorSaveKey='gvn_editor_project_v1';
 const editorDraftApp='galgame-studio-draft';
 let draftInfo={savedAt:null,restored:false};
-function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#ffffff',bgImage:'',speaker:'',text:'',ending:null,setFlags:[],next:'',autoBranches:[],choices:[],dialogues:[],characters:[]};}
+let draftSaveTimer=null;
+function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#ffffff',bgImage:'',speaker:'',text:'',video:'',videoMuted:true,ending:null,setFlags:[],next:'',autoBranches:[],choices:[],dialogues:[],characters:[]};}
 function newProject(){
   const s=defaultScene('开始场景',100,120);s.text='欢迎使用 Galgame 制作工坊！在右侧面板编辑这段文本，然后点击 ▶ 运行测试。';
   project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},scenes:[s],characters:[]};
@@ -499,7 +500,7 @@ function migrateProject(p){
   Object.keys(oldMap).forEach(k=>{Object.keys(oldMap[k]).forEach(f=>{if(p.ui[k][f]===oldMap[k][f])p.ui[k][f]=du[k][f];});});
   return p;
 }
-function saveEditor(){
+function persistEditorDraft(){
   if(!project)return false;
   try{
     draftInfo.savedAt=new Date().toISOString();
@@ -512,6 +513,15 @@ function saveEditor(){
     return false;
   }
 }
+function saveEditor(){
+  if(draftSaveTimer)clearTimeout(draftSaveTimer);
+  draftSaveTimer=setTimeout(()=>{draftSaveTimer=null;persistEditorDraft();},400);
+  return true;
+}
+function flushSaveEditor(){
+  if(draftSaveTimer){clearTimeout(draftSaveTimer);draftSaveTimer=null;}
+  return persistEditorDraft();
+}
 function formatTime(iso){try{const d=new Date(iso);return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
 function updateDraftStatus(failed){
   const el=$('#draftStatus');if(!el)return;
@@ -521,7 +531,7 @@ function updateDraftStatus(failed){
 }
 function saveDraft(){
   if(!project){toast('暂无可保存的项目');return;}
-  if(saveEditor()){toast('✅ 草稿已保存到浏览器本地（'+formatTime(draftInfo.savedAt)+'），关闭页面后可继续编辑');}
+  if(flushSaveEditor()){toast('✅ 草稿已保存到浏览器本地（'+formatTime(draftInfo.savedAt)+'），关闭页面后可继续编辑');}
   else{alert('草稿保存失败：浏览器本地存储空间不足或被禁用。\n建议使用「导出 JSON」把项目保存为文件。');}
 }
 function loadEditor(){
@@ -1541,7 +1551,7 @@ function renderCharacters(){
     div.style.filter=active?'drop-shadow(0 0 18px rgba(251,114,153,.55))':'none';
     div.style.transform='translate(-50%,-100%) rotate('+(ch.rotate||0)+'deg)';
     const h=(55*ch.scale).toFixed(1);
-    const stack=document.createElement('div');stack.className='char-stack';stack.style.height=h+'vh';stack.style.position='relative';
+    const stack=document.createElement('div');stack.className='char-stack char-anim';stack.style.height=h+'vh';stack.style.position='relative';
     const baseLayer=document.createElement('div');baseLayer.className='char-layer';baseLayer.style.position='relative';baseLayer.style.height='100%';
     if(vis.image){
       const img=document.createElement('img');img.src=vis.image;img.alt=vis.name;img.draggable=false;img.style.height='100%';baseLayer.appendChild(img);
@@ -2073,7 +2083,7 @@ function initEditorEvents(){
   $('#aiImgTarget').addEventListener('change',renderAiCharSels);
   $('#aiCharSel').addEventListener('change',renderAiCharSels);
   ['aiImageBaseUrl','aiImageKey','aiImageModel','aiImagePath','aiImageFormat','aiImageSize','aiVideoBaseUrl','aiVideoKey','aiVideoModel','aiVideoPath','aiVideoSize','aiTextBaseUrl','aiTextKey','aiTextModel','aiTextPath'].forEach(id=>{const el=$('#'+id);if(el){el.addEventListener('input',saveAiSettings);el.addEventListener('change',saveAiSettings);}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#aiModal').classList.contains('hidden'))closeAiModal();});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('#aiModal').classList.contains('hidden')){closeAiModal();}else if(!$('#flagsModal').classList.contains('hidden')){applyFlagsModal();$('#flagsModal').classList.add('hidden');}else if(!$('#charModal').classList.contains('hidden')){$('#charModal').classList.add('hidden');saveEditor();}});
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
   $('#flagsList').addEventListener('click',e=>{const btn=e.target.closest('button[data-frole=del]');if(btn)btn.closest('.flag-list-row').remove();});
@@ -2145,7 +2155,7 @@ function boot(){
   applyFlowTransform();
   $('#projectTitle').value=project.title||'';
   updateDraftStatus();
-  window.addEventListener('beforeunload',()=>{saveEditor();});
+  window.addEventListener('beforeunload',()=>{flushSaveEditor();});
   if(draftInfo.restored){toast('📝 已恢复上次编辑的草稿'+(draftInfo.savedAt?'（'+formatTime(draftInfo.savedAt)+'）':''));}
 }
 boot();
