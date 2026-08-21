@@ -97,6 +97,10 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 .modal-box{background:#FFFFFF;border:1px solid #E3E5E7;border-radius:16px;padding:22px;width:min(560px,94vw);max-height:88vh;overflow-y:auto}
 .modal-box h3{margin-bottom:10px;color:#18191C}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.ai-grid label{display:block}
+.ai-grid input,.ai-grid select{width:100%;margin-top:4px}
+.ai-result img{max-width:100%;max-height:220px;border-radius:10px;margin-top:8px}
 .flag-list-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .flag-list-row input[type=text]{flex:1}
 .flag-list-row input[type=number]{width:90px}
@@ -196,6 +200,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <button id="btnFlags">⚙ 数值管理</button>
     <button id="btnCharModule">🎭 人物模块</button>
     <button id="btnAutoLayout">自动布局</button>
+    <button id="btnAi">🤖 AI 辅助</button>
     <span style="flex:1"></span>
     <button id="btnExport">导出 JSON</button>
     <button id="btnImport">导入 JSON</button>
@@ -309,6 +314,44 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <div class="modal-actions"><button id="btnFlagsClose" class="primary">完成</button></div>
   </div>
 </div>
+<!-- AI 辅助模态 -->
+<div id="aiModal" class="modal hidden">
+  <div class="modal-box" style="width:min(760px,96vw)">
+    <h3>🤖 AI 辅助（生图 / 文本）</h3>
+    <p class="hint">接入你自己的 OpenAI 兼容 API（OpenAI、DeepSeek、通义、智谱等）。API Key 仅保存在浏览器 localStorage，不会上传到本项目服务器。</p>
+    <div class="insp-sec" style="margin-top:10px">
+      <h4>🔑 API 设置</h4>
+      <div class="ai-grid">
+        <label>Base URL<input id="aiBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false"></label>
+        <label>API Key<input id="aiKey" type="password" placeholder="sk-..." spellcheck="false"></label>
+        <label>图像模型<input id="aiImageModel" type="text" placeholder="gpt-image-1 / dall-e-3" spellcheck="false"></label>
+        <label>图像路径<input id="aiImagePath" type="text" placeholder="/images/generations" spellcheck="false"></label>
+        <label>图像返回格式<select id="aiImgFormat"><option value="b64_json">b64_json（本地保存）</option><option value="url">url（外链）</option><option value="">不设置（由 API 决定）</option></select></label>
+        <label>尺寸<select id="aiSize"><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option><option>1792x1024</option><option>1024x1792</option></select></label>
+        <label>文本模型<input id="aiTextModel" type="text" placeholder="gpt-4o-mini / deepseek-chat" spellcheck="false"></label>
+        <label>文本路径<input id="aiTextPath" type="text" placeholder="/chat/completions" spellcheck="false"></label>
+      </div>
+    </div>
+    <div class="insp-sec">
+      <h4>🎨 AI 生图</h4>
+      <div class="ai-grid">
+        <label>应用到<select id="aiImgTarget"><option value="bg">当前场景背景</option><option value="sceneChar">当前场景角色立绘</option><option value="libBase">人物库·基础立绘</option><option value="libAction">人物库·动作图</option></select></label>
+        <label class="hidden" id="aiCharWrap">选择角色<select id="aiCharSel"></select></label>
+        <label class="hidden" id="aiActWrap">选择动作<select id="aiActSel"></select></label>
+      </div>
+      <label>画面描述<textarea id="aiPrompt" rows="3" placeholder="例如：黄昏的校门口，一位黑发少女微笑着挥手，二次元动画风格，高清立绘，背景虚化"></textarea></label>
+      <div class="dp-btns" style="margin-top:8px"><button id="btnAiGenImage" class="primary">🪄 生成并应用</button> <span class="hint" id="aiImgStatus"></span></div>
+      <div class="ai-result" id="aiImgResult"></div>
+    </div>
+    <div class="insp-sec">
+      <h4>📝 AI 文本辅助</h4>
+      <label>文本需求<textarea id="aiTextPrompt" rows="3" placeholder="例如：写 3 句小夜在黄昏教室里的告白前奏，每句一行，不要描写，只输出对话"></textarea></label>
+      <div class="dp-btns" style="margin-top:8px"><button id="btnAiGenText">生成文本</button><button id="btnAiTextApply" class="primary">追加到当前场景对话</button> <span class="hint" id="aiTextStatus"></span></div>
+      <label style="margin-top:8px">生成结果<textarea id="aiTextResult" rows="6" placeholder="生成后的文本会显示在这里"></textarea></label>
+    </div>
+    <div class="modal-actions"><button id="btnAiClose" class="primary">完成</button></div>
+  </div>
+</div>
 <!-- 帮助模态 -->
 <div id="helpModal" class="modal hidden">
   <div class="modal-box">
@@ -319,7 +362,8 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
       3. <b>数值</b>：点击「数值管理」创建 Flag（如 好感度）。在「进入时设置数值」或选项里对其加减。条件示例：<code>好感度 &gt;= 3 &amp;&amp; 勇气 &gt; 1</code><br>
       4. <b>结局</b>：勾选「本场景是结局」，到达该场景即进入结局画面。<br>
       5. <b>播放</b>：点「运行测试」。播放器支持 快进 / 后退 / 历史 / 自动 / 存档读档（浏览器本地）。点击「🎭 演示模式」可在游戏画面中直接点击并拖动背景/角色立绘/文本框/角色名牌/选项区，上传图片，调整位置、缩放、透明度、配色、字号等 UI 样式，修改自动同步回项目。<br>
-      6. <b>导出</b>：项目可导出为 JSON 文件永久保存，也可再导入继续编辑。
+      6. <b>导出</b>：项目可导出为 JSON 文件永久保存，也可再导入继续编辑。<br>
+      7. <b>AI 辅助</b>：点击「🤖 AI 辅助」可配置你自己的 OpenAI 兼容 API，使用个人 AI 进行生图 / 文本生成等辅助操作，API Key 仅保存在本地浏览器。
     </div>
     <div class="modal-actions"><button id="btnHelpClose" class="primary">知道了</button></div>
   </div>
@@ -813,6 +857,149 @@ function insertAtCursor(input,text){
   input.value=input.value.slice(0,s)+text+input.value.slice(e);
   input.selectionStart=input.selectionEnd=s+text.length;
   input.dispatchEvent(new Event('input',{bubbles:true}));
+}
+/* ---------------- AI 辅助（接入用户个人 API） ---------------- */
+const aiSaveKey='gvn_ai_settings_v1';
+let aiBusy=false;
+function getAiSettings(){
+  const def={baseUrl:'https://api.openai.com/v1',key:'',imageModel:'gpt-image-1',imagePath:'/images/generations',imgFormat:'b64_json',textModel:'gpt-4o-mini',textPath:'/chat/completions'};
+  try{const raw=localStorage.getItem(aiSaveKey);if(raw)Object.assign(def,JSON.parse(raw));}catch(e){}
+  return def;
+}
+function saveAiSettings(){
+  const s=getAiSettings();
+  const ids={baseUrl:'aiBaseUrl',key:'aiKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imgFormat:'aiImgFormat',textModel:'aiTextModel',textPath:'aiTextPath'};
+  Object.keys(ids).forEach(k=>{const el=$('#'+ids[k]);if(el)s[k]=el.value;});
+  try{localStorage.setItem(aiSaveKey,JSON.stringify(s));}catch(e){}
+  return s;
+}
+function fillAiSettings(){
+  const s=getAiSettings();
+  const ids={baseUrl:'aiBaseUrl',key:'aiKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imgFormat:'aiImgFormat',textModel:'aiTextModel',textPath:'aiTextPath'};
+  Object.keys(ids).forEach(k=>{const el=$('#'+ids[k]);if(el)el.value=s[k];});
+}
+function renderAiCharSels(){
+  const target=$('#aiImgTarget').value;
+  const charSel=$('#aiCharSel'),actSel=$('#aiActSel');
+  const charWrap=$('#aiCharWrap'),actWrap=$('#aiActWrap');
+  const prevChar=charSel.value;
+  if(target==='bg'){charWrap.classList.add('hidden');actWrap.classList.add('hidden');return;}
+  let chars=[];
+  if(target==='sceneChar'){const sc=selectedScene();chars=sc?(sc.characters||[]):[];}
+  else if(target==='libBase'||target==='libAction'){chars=project.characters||[];}
+  charWrap.classList.remove('hidden');
+  charSel.innerHTML=chars.length?chars.map(c=>`<option value="${esc(c.id)}" ${c.id===prevChar?'selected':''}>${esc(c.name||'未命名')}</option>`).join(''):'<option value="">（没有可选角色）</option>';
+  if(prevChar&&chars.some(c=>c.id===prevChar)){charSel.value=prevChar;}else{charSel.value=chars[0]?chars[0].id:'';}
+  if(target==='libAction'){
+    actWrap.classList.remove('hidden');
+    const ch=project.characters.find(c=>c.id===charSel.value)||project.characters[0]||null;
+    actSel.innerHTML=(ch&&ch.actions&&ch.actions.length)?ch.actions.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join(''):'<option value="">（没有可选动作）</option>';
+  }else{actWrap.classList.add('hidden');}
+}
+function openAiModal(){fillAiSettings();renderAiCharSels();$('#aiImgResult').innerHTML='';$('#aiTextResult').value='';$('#aiModal').classList.remove('hidden');}
+function closeAiModal(){saveAiSettings();$('#aiModal').classList.add('hidden');}
+async function aiFetchOpenAI(url,key,body){
+  const headers={'Content-Type':'application/json'};
+  if(key)headers['Authorization']='Bearer '+key;
+  const res=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+  const text=await res.text();
+  let data={};
+  try{data=text?JSON.parse(text):{};}catch(e){data={raw:text};}
+  if(!res.ok){const msg=(data.error&&data.error.message)||text||('HTTP '+res.status);throw new Error(msg);}
+  return data;
+}
+function applyAiImage(imgData,target){
+  const sc=selectedScene();
+  const charSel=$('#aiCharSel').value;
+  if(target==='bg'){
+    if(!sc){toast('请先选择场景');return;}
+    sc.bgImage=imgData;renderInspector();renderFlow();saveEditor();toast('背景图已更新');return;
+  }
+  if(target==='sceneChar'){
+    if(!sc){toast('请先选择场景');return;}
+    const ch=(sc.characters||[]).find(c=>c.id===charSel);
+    if(!ch){toast('请先选择场景角色');return;}
+    ch.image=imgData;saveEditor();toast('场景角色立绘已更新');return;
+  }
+  if(target==='libBase'){
+    const ch=project.characters.find(c=>c.id===charSel);
+    if(!ch){toast('请先选择人物');return;}
+    ch.baseImage=imgData;ch.originalImage=imgData;
+    if(!$('#charModal').classList.contains('hidden'))renderCharModule();
+    saveEditor();toast('人物基础立绘已更新');return;
+  }
+  if(target==='libAction'){
+    const ch=project.characters.find(c=>c.id===charSel);
+    const act=ch&&(ch.actions||[]).find(a=>a.id===$('#aiActSel').value);
+    if(!act){toast('请先选择人物和动作');return;}
+    act.image=imgData;
+    if(!$('#charModal').classList.contains('hidden'))renderCharModule();
+    saveEditor();toast('动作立绘已更新');return;
+  }
+}
+async function aiGenerateImage(){
+  if(aiBusy)return;
+  const s=saveAiSettings();
+  if(!s.key){toast('请先填写 API Key');return;}
+  const prompt=$('#aiPrompt').value.trim();
+  if(!prompt){toast('请填写画面描述');return;}
+  const target=$('#aiImgTarget').value;
+  const sc=selectedScene();
+  if(target==='bg'&&!sc){toast('请先在左侧选择一个场景');return;}
+  if(target==='sceneChar'){const ch=(sc&&sc.characters||[]).find(c=>c.id===$('#aiCharSel').value);if(!ch){toast('当前场景没有可选角色');return;}}
+  if((target==='libBase'||target==='libAction')&&!$('#aiCharSel').value){toast('请先在人物模块中新建人物');return;}
+  if(target==='libAction'&&!$('#aiActSel').value){toast('请先选择动作');return;}
+  const base=s.baseUrl.replace(/\/+$/,'');
+  const body={model:s.imageModel,prompt,n:1,size:$('#aiSize').value};
+  if(s.imgFormat)body.response_format=s.imgFormat;
+  const btn=$('#btnAiGenImage');btn.disabled=true;$('#aiImgStatus').textContent='生成中，请稍候…';
+  aiBusy=true;
+  try{
+    const data=await aiFetchOpenAI(base+(s.imagePath||'/images/generations'),s.key,body);
+    let imgData=null;
+    const first=(data.data&&data.data[0])||data;
+    if(first){if(first.b64_json)imgData='data:image/png;base64,'+first.b64_json;else if(first.url)imgData=first.url;}
+    if(!imgData){
+      const arr=data.output||data.images||data.data;
+      if(arr&&arr[0]){const it=arr[0];if(it.b64_json)imgData='data:image/png;base64,'+it.b64_json;else if(it.url)imgData=it.url;}
+    }
+    if(!imgData)throw new Error('返回中没有 b64_json 或 url');
+    applyAiImage(imgData,target);
+    $('#aiImgResult').innerHTML=`<img src="${esc(imgData)}" alt="AI生成图"><p class="hint">已应用，可在对应位置查看。</p>`;
+    toast('AI 生图已应用');
+    if(imgData.length>2500000)toast('图片较大（>2.5MB），自动保存可能失败，建议使用外链 URL');
+  }catch(e){
+    toast('AI 生图失败：'+e.message+(/Failed to fetch/i.test(e.message)?'（请检查 Base URL、网络，或该 API 是否允许浏览器 CORS）':''));
+  }finally{aiBusy=false;btn.disabled=false;$('#aiImgStatus').textContent='';}
+}
+async function aiGenerateText(){
+  if(aiBusy)return;
+  const s=saveAiSettings();
+  if(!s.key){toast('请先填写 API Key');return;}
+  const prompt=$('#aiTextPrompt').value.trim();
+  if(!prompt){toast('请填写文本需求');return;}
+  const base=s.baseUrl.replace(/\/+$/,'');
+  const body={model:s.textModel,messages:[{role:'system',content:'你是一位 Galgame / 视觉小说编剧助手。只输出剧本正文，不要解释、不要额外信息。'},{role:'user',content:prompt}]};
+  const btn=$('#btnAiGenText');btn.disabled=true;$('#aiTextStatus').textContent='生成中，请稍候…';
+  aiBusy=true;
+  try{
+    const data=await aiFetchOpenAI(base+(s.textPath||'/chat/completions'),s.key,body);
+    const text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||'';
+    if(!text.trim())throw new Error('返回中没有文本');
+    $('#aiTextResult').value=text.trim();
+    toast('文本已生成');
+  }catch(e){
+    toast('AI 文本生成失败：'+e.message+(/Failed to fetch/i.test(e.message)?'（请检查 Base URL、网络，或该 API 是否允许浏览器 CORS）':''));
+  }finally{aiBusy=false;btn.disabled=false;$('#aiTextStatus').textContent='';}
+}
+function aiApplyText(){
+  const sc=selectedScene();if(!sc){toast('请先选择场景');return;}
+  const text=$('#aiTextResult').value.trim();
+  if(!text){toast('没有可应用的文本');return;}
+  sc.dialogues=sc.dialogues||[];
+  const lines=text.split(/\n+/).filter(Boolean);
+  lines.forEach(line=>{sc.dialogues.push({id:uid('d'),speaker:sc.speaker||'',text:line,charId:'',actionId:''});});
+  renderInspector();saveEditor();toast('已追加 '+lines.length+' 句对话到当前场景');
 }
 function handleInspectorClick(e){
   const t=e.target;
@@ -1728,6 +1915,15 @@ function initEditorEvents(){
     renderCharModule();saveEditor();toast('已新建人物');
   };
   $('#btnCharModuleClose').onclick=()=>{$('#charModal').classList.add('hidden');saveEditor();};
+  $('#btnAi').onclick=openAiModal;
+  $('#btnAiClose').onclick=closeAiModal;
+  $('#btnAiGenImage').onclick=aiGenerateImage;
+  $('#btnAiGenText').onclick=aiGenerateText;
+  $('#btnAiTextApply').onclick=aiApplyText;
+  $('#aiImgTarget').addEventListener('change',renderAiCharSels);
+  $('#aiCharSel').addEventListener('change',renderAiCharSels);
+  ['aiBaseUrl','aiKey','aiImageModel','aiImagePath','aiImgFormat','aiTextModel','aiTextPath'].forEach(id=>{const el=$('#'+id);if(el){el.addEventListener('input',saveAiSettings);el.addEventListener('change',saveAiSettings);}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#aiModal').classList.contains('hidden'))closeAiModal();});
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
   $('#flagsList').addEventListener('click',e=>{const btn=e.target.closest('button[data-frole=del]');if(btn)btn.closest('.flag-list-row').remove();});
