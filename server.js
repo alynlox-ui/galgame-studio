@@ -25,6 +25,11 @@ const MIME = {
 http.createServer((req, res) => {
   try {
     let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+    if (urlPath === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('OK');
+      return;
+    }
     if (urlPath === '/') urlPath = '/index.html';
 
     const filePath = path.normalize(path.join(ROOT, urlPath));
