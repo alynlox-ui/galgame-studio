@@ -104,6 +104,14 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
 .ai-grid label{display:block}
 .ai-grid input,.ai-grid select{width:100%;margin-top:4px}
 .ai-result img{max-width:100%;max-height:220px;border-radius:10px;margin-top:8px}
+.ui-presets{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.ui-preview{position:relative;height:250px;border:1px solid #E3E5E7;border-radius:12px;overflow:hidden;background:#F4F5F7;margin:10px 0 12px}
+.ui-preview .pv-textbox{position:absolute;left:50%;top:94%;transform:translate(-50%,-100%);width:min(82%,560px);padding:14px 18px;border-radius:12px;background:#FFFFFF;border:1px solid #E3E5E7;box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.ui-preview .pv-speaker{display:inline-block;background:#FB7299;color:#FFFFFF;padding:3px 14px;border-radius:999px;font-size:13px;font-weight:700;margin-bottom:8px}
+.ui-preview .pv-text{font-size:16px;line-height:1.6;color:#18191C;min-height:44px}
+.ui-preview .pv-choices{position:absolute;left:50%;top:34%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;width:min(60%,420px)}
+.ui-preview .pv-choices button{background:var(--ch-bg,#FFFFFF);border:1px solid var(--ch-border,#FB7299);color:var(--ch-color,#FB7299);padding:9px 16px;font-size:var(--ch-font,14px);border-radius:var(--ch-radius,12px);text-align:center}
+.ui-preview .pv-hint{position:absolute;right:12px;bottom:8px;font-size:11px;color:#9499A0}
 .flag-list-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .flag-list-row input[type=text]{flex:1}
 .flag-list-row input[type=number]{width:90px}
@@ -203,6 +211,7 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <button id="btnFlags">⚙ 数值管理</button>
     <button id="btnCharModule">🎭 人物模块</button>
     <button id="btnAutoLayout">自动布局</button>
+    <button id="btnUiSettings">🎨 UI 设置</button>
     <button id="btnAi">🤖 AI 辅助</button>
     <span style="flex:1"></span>
     <button id="btnSaveDraft" title="将当前项目保存为浏览器本地草稿，关闭页面后再次打开可继续编辑">💾 保存草稿</button>
@@ -318,6 +327,26 @@ header .logo{font-weight:700;font-size:16px;margin-right:6px;white-space:nowrap;
     <div id="flagsList"></div>
     <button id="btnAddFlag" class="mini primary">＋ 添加数值</button>
     <div class="modal-actions"><button id="btnFlagsClose" class="primary">完成</button></div>
+  </div>
+</div>
+<!-- UI 设置模态 -->
+<div id="uiModal" class="modal hidden">
+  <div class="modal-box" style="width:min(820px,96vw)">
+    <h3>🎨 UI 设置</h3>
+    <p class="hint">在这里调整游戏中的文本框、角色名牌、选项区和点击提示。修改会实时预览并自动保存。</p>
+    <div class="ui-presets" id="uiPresets">
+      <button type="button" class="mini" data-uipreset="default">粉白默认</button>
+      <button type="button" class="mini" data-uipreset="dark">深色夜晚</button>
+      <button type="button" class="mini" data-uipreset="paper">复古纸张</button>
+      <button type="button" class="mini" data-uipreset="minimal">极简黑白</button>
+    </div>
+    <div class="ui-preview" id="uiPreviewBox">
+      <div class="pv-choices" id="uiPreviewChoices"><button type="button">选项 A</button><button type="button">选项 B</button></div>
+      <div class="pv-textbox" id="uiPreviewTextBox"><span class="pv-speaker" id="uiPreviewSpeaker">小夜</span><div class="pv-text" id="uiPreviewText">这是一段预览台词，用来展示文本框样式。</div></div>
+      <div class="pv-hint" id="uiPreviewHint">▼ 点击 / 空格 继续</div>
+    </div>
+    <div id="uiSettingsBody"></div>
+    <div class="modal-actions"><button id="btnUiResetAll" class="danger">恢复默认</button><button id="btnUiClose" class="primary">完成</button></div>
   </div>
 </div>
 <!-- AI 辅助模态 -->
@@ -453,7 +482,7 @@ let draftSaveTimer=null;
 function defaultScene(name,x,y){return{id:uid('s'),name:name||'新场景',x:x||100,y:y||100,bg:'#ffffff',bgImage:'',speaker:'',text:'',video:'',videoMuted:true,ending:null,setFlags:[],next:'',autoBranches:[],choices:[],dialogues:[],characters:[]};}
 function newProject(){
   const s=defaultScene('开始场景',100,120);s.text='欢迎使用 Galgame 制作工坊！在右侧面板编辑这段文本，然后点击 ▶ 运行测试。';
-  project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},scenes:[s],characters:[]};
+  project={id:uid('proj'),title:'未命名作品',startScene:s.id,flags:{},ui:defaultUILayout(),scenes:[s],characters:[]};
   selectedSceneId=s.id;
 }
 function sampleProject(){
@@ -488,12 +517,13 @@ function applyFlagOp(flags,op,key,value){
   flags[key]=Math.round(r*1000)/1000;
 }
 function applySetFlags(list,flags){(list||[]).forEach(r=>{if(r&&r.flag)applyFlagOp(flags,r.op,r.flag,r.value);});}
+function defaultUILayout(){return {textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};}
 function getFlagArray(sc,owner){return owner===''?(sc.setFlags||(sc.setFlags=[])):(sc.choices[+owner].setFlags||(sc.choices[+owner].setFlags=[]));}
 function migrateProject(p){
   p=p||{};p.scenes=p.scenes||[];p.flags=p.flags||{};p.startScene=p.startScene||(p.scenes[0]&&p.scenes[0].id)||'';
   p.scenes.forEach(s=>{s.setFlags=s.setFlags||[];s.autoBranches=s.autoBranches||[];s.choices=s.choices||[];s.next=s.next||'';s.bg=s.bg||'#ffffff';s.bgImage=s.bgImage||'';s.dialogues=s.dialogues||[];s.dialogues.forEach(d=>{d.speaker=d.speaker||'';d.text=d.text||'';d.charId=d.charId||'';d.actionId=d.actionId||'';});s.video=s.video||'';s.videoMuted=s.videoMuted!==false;s.characters=s.characters||[];s.characters.forEach(c=>{c.name=c.name||'角色';c.image=c.image||'';c.x=c.x??50;c.y=c.y??88;c.scale=c.scale??1;c.opacity=c.opacity??1;c.charId=c.charId||'';c.actionId=c.actionId||'';c.rotate=c.rotate??0;c.dialogueIndex=c.dialogueIndex??0;});});
   p.characters=p.characters||[];p.characters.forEach(c=>{c.name=c.name||'未命名';c.baseImage=c.baseImage||'';c.originalImage=c.originalImage||c.baseImage;c.actions=c.actions||[];c.live2d=!!c.live2d;c.overlays=c.overlays||[];c.overlays.forEach(o=>{o.name=o.name||'图层';o.image=o.image||'';o.opacity=o.opacity??1;o.visible=o.visible!==false;});c.actions.forEach(a=>{a.name=a.name||'动作';a.image=a.image||'';a.anim=a.anim||'idle';a.speed=a.speed??1;a.duration=a.duration??2;a.loop=a.loop!==false;a.keyframes=a.keyframes||[];a.keyframes.forEach(k=>{k.t=k.t??0;k.x=k.x??0;k.y=k.y??0;k.scale=k.scale??1;k.opacity=k.opacity??1;k.rotate=k.rotate??0;k.ease=k.ease||'linear';});});});
-  const du={textbox:{show:true,x:50,y:94,w:82,opacity:1,bg:'#FFFFFF',border:'#E3E5E7',radius:12,fontColor:'#18191C',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#FB7299',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:1,bg:'#FFFFFF',border:'#FB7299',color:'#FB7299',radius:12,fontSize:16},hint:{show:true}};
+  const du=defaultUILayout();
   p.ui=p.ui||{};
   Object.keys(du).forEach(k=>{p.ui[k]=Object.assign(du[k],p.ui[k]||{});});
   const oldMap={textbox:{bg:'#ffffff',border:'#FB7299',fontColor:'#374151'},speaker:{bg:'#FB7299'},choices:{bg:'#ffffff',border:'#FB7299',color:'#C75C7E'}};
@@ -969,6 +999,157 @@ function fillAiSettings(){
   const ids={imageBaseUrl:'aiImageBaseUrl',imageKey:'aiImageKey',imageModel:'aiImageModel',imagePath:'aiImagePath',imageFormat:'aiImageFormat',imageSize:'aiImageSize',videoBaseUrl:'aiVideoBaseUrl',videoKey:'aiVideoKey',videoModel:'aiVideoModel',videoPath:'aiVideoPath',videoSize:'aiVideoSize',textBaseUrl:'aiTextBaseUrl',textKey:'aiTextKey',textModel:'aiTextModel',textPath:'aiTextPath'};
   Object.keys(ids).forEach(k=>{const el=$('#'+ids[k]);if(el)el.value=s[k];});
 }
+/* ---------------- UI 设置（编辑器） ---------------- */
+const UI_PRESETS={
+  default:()=>defaultUILayout(),
+  dark:()=>({textbox:{show:true,x:50,y:94,w:82,opacity:0.92,bg:'#1F2937',border:'#4B5563',radius:12,fontColor:'#F9FAFB',fontSize:18,lineHeight:1.75},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#8B5CF6',color:'#FFFFFF',radius:999,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:0.92,bg:'#1F2937',border:'#8B5CF6',color:'#F9FAFB',radius:12,fontSize:16},hint:{show:1}}),
+  paper:()=>({textbox:{show:true,x:50,y:94,w:82,opacity:0.95,bg:'#FFF7E6',border:'#D4A373',radius:6,fontColor:'#5C4033',fontSize:18,lineHeight:1.8},speaker:{show:true,offsetX:0,offsetY:0,scale:1,bg:'#D4A373',color:'#FFFFFF',radius:4,fontSize:14},choices:{show:true,x:50,y:36,w:60,opacity:0.95,bg:'#FFF7E6',border:'#D4A373',color:'#5C4033',radius:6,fontSize:16},hint:{show:1}}),
+  minimal:()=>({textbox:{show:true,x:50,y:94,w:78,opacity:0.98,bg:'#111111',border:'#333333',radius:2,fontColor:'#FFFFFF',fontSize:17,lineHeight:1.7},speaker:{show:false,offsetX:0,offsetY:0,scale:1,bg:'#111111',color:'#FFFFFF',radius:2,fontSize:13},choices:{show:true,x:50,y:36,w:56,opacity:0.98,bg:'#111111',border:'#FFFFFF',color:'#FFFFFF',radius:2,fontSize:15},hint:{show:false}})
+};
+function uiSettingsHTML(){
+  const u=project.ui||defaultUILayout();
+  return `
+  <details class="insp-sec" open><summary>💬 文本框</summary>
+    ${uiCheckboxHTML('uiTbShow','显示文本框',u.textbox.show)}
+    ${uiSliderHTML('uiTbX','uiTbXVal','水平位置 X',u.textbox.x,0,100,0.5)}
+    ${uiSliderHTML('uiTbY','uiTbYVal','垂直位置 Y（底边）',u.textbox.y,0,100,0.5)}
+    ${uiSliderHTML('uiTbW','uiTbWVal','宽度 %',u.textbox.w,10,100,0.5)}
+    ${uiSliderHTML('uiTbOpacity','uiTbOpacityVal','背景不透明度',u.textbox.opacity,0,1,0.05)}
+    ${uiColorHTML('uiTbBg','背景色',u.textbox.bg)}
+    ${uiColorHTML('uiTbBorder','边框色',u.textbox.border)}
+    ${uiSliderHTML('uiTbRadius','uiTbRadiusVal','圆角',u.textbox.radius,0,30,1)}
+    ${uiColorHTML('uiTbFontColor','文字颜色',u.textbox.fontColor)}
+    ${uiSliderHTML('uiTbFontSize','uiTbFontSizeVal','字号',u.textbox.fontSize,10,36,1)}
+    ${uiSliderHTML('uiTbLineHeight','uiTbLineHeightVal','行高',u.textbox.lineHeight,1.2,2.5,0.05)}
+    <button type="button" class="mini danger" data-uireset="textbox">重置本组件</button>
+  </details>
+  <details class="insp-sec"><summary>🏷 角色名牌</summary>
+    ${uiCheckboxHTML('uiSpShow','显示角色名牌',u.speaker.show)}
+    ${uiSliderHTML('uiSpX','uiSpXVal','水平偏移(px)',u.speaker.offsetX,-80,80,1)}
+    ${uiSliderHTML('uiSpY','uiSpYVal','垂直偏移(px)',u.speaker.offsetY,-80,80,1)}
+    ${uiSliderHTML('uiSpScale','uiSpScaleVal','缩放',u.speaker.scale,0.5,1.5,0.05)}
+    ${uiColorHTML('uiSpBg','背景色',u.speaker.bg)}
+    ${uiColorHTML('uiSpColor','文字颜色',u.speaker.color)}
+    ${uiSliderHTML('uiSpRadius','uiSpRadiusVal','圆角',u.speaker.radius,0,30,1)}
+    ${uiSliderHTML('uiSpFontSize','uiSpFontSizeVal','字号',u.speaker.fontSize,10,24,1)}
+    <button type="button" class="mini danger" data-uireset="speaker">重置本组件</button>
+  </details>
+  <details class="insp-sec"><summary>🔘 选项区</summary>
+    ${uiCheckboxHTML('uiChShow','显示选项区',u.choices.show)}
+    ${uiSliderHTML('uiChX','uiChXVal','水平位置 X',u.choices.x,0,100,0.5)}
+    ${uiSliderHTML('uiChY','uiChYVal','垂直位置 Y',u.choices.y,0,100,0.5)}
+    ${uiSliderHTML('uiChW','uiChWVal','宽度 %',u.choices.w,10,100,0.5)}
+    ${uiSliderHTML('uiChOpacity','uiChOpacityVal','不透明度',u.choices.opacity,0,1,0.05)}
+    ${uiColorHTML('uiChBg','按钮背景色',u.choices.bg)}
+    ${uiColorHTML('uiChBorder','按钮边框色',u.choices.border)}
+    ${uiColorHTML('uiChColor','按钮文字色',u.choices.color)}
+    ${uiSliderHTML('uiChRadius','uiChRadiusVal','按钮圆角',u.choices.radius,0,30,1)}
+    ${uiSliderHTML('uiChFontSize','uiChFontSizeVal','按钮字号',u.choices.fontSize,10,30,1)}
+    <button type="button" class="mini danger" data-uireset="choices">重置本组件</button>
+  </details>
+  <details class="insp-sec"><summary>👆 点击提示</summary>
+    ${uiCheckboxHTML('uiHintShow','显示右下角“点击继续”提示',u.hint.show)}
+    <button type="button" class="mini danger" data-uireset="hint">重置本组件</button>
+  </details>`;
+}
+function renderUIPreview(){
+  const u=project.ui;if(!u)return;
+  const tb=$('#uiPreviewTextBox'),sp=$('#uiPreviewSpeaker'),ca=$('#uiPreviewChoices'),hint=$('#uiPreviewHint'),tc=$('#uiPreviewText');
+  if(tb){
+    tb.style.left=u.textbox.x+'%';tb.style.top=u.textbox.y+'%';tb.style.bottom='auto';tb.style.transform='translate(-50%,-100%)';
+    tb.style.width='min('+u.textbox.w+'%, 94%)';tb.style.background=u.textbox.bg;tb.style.borderColor=u.textbox.border;
+    tb.style.borderRadius=u.textbox.radius+'px';tb.style.opacity=u.textbox.opacity;tb.style.display=u.textbox.show?'block':'none';
+  }
+  if(sp){
+    sp.style.display=(u.speaker.show&&u.textbox.show)?'inline-block':'none';sp.style.background=u.speaker.bg;sp.style.color=u.speaker.color;
+    sp.style.borderRadius=u.speaker.radius+'px';sp.style.fontSize=u.speaker.fontSize+'px';sp.style.position='relative';
+    sp.style.left=u.speaker.offsetX+'px';sp.style.top=u.speaker.offsetY+'px';sp.style.transform='scale('+u.speaker.scale+')';
+  }
+  if(tc){tc.style.color=u.textbox.fontColor;tc.style.fontSize=u.textbox.fontSize+'px';tc.style.lineHeight=u.textbox.lineHeight;}
+  if(ca){
+    ca.style.left=u.choices.x+'%';ca.style.top=u.choices.y+'%';ca.style.transform='translateX(-50%)';ca.style.width='min('+u.choices.w+'%, 94%)';
+    ca.style.opacity=u.choices.opacity;ca.style.display=u.choices.show?'flex':'none';
+    ca.style.setProperty('--ch-bg',u.choices.bg);ca.style.setProperty('--ch-border',u.choices.border);ca.style.setProperty('--ch-color',u.choices.color);
+    ca.style.setProperty('--ch-radius',u.choices.radius+'px');ca.style.setProperty('--ch-font',u.choices.fontSize+'px');
+  }
+  if(hint){hint.style.display=u.hint.show?'block':'none';}
+}
+function bindEditorUIRange(id,valId,obj,key){
+  const el=$(id);if(!el)return;
+  el.oninput=()=>{obj[key]=parseFloat(el.value)||0;updateDemoLabel(valId,obj[key]);renderUIPreview();saveEditor();};
+}
+function bindEditorUIColor(id,obj,key){
+  const el=$(id);if(!el)return;
+  el.oninput=()=>{obj[key]=el.value;renderUIPreview();saveEditor();};
+}
+function bindEditorUICheck(id,obj,key){
+  const el=$(id);if(!el)return;
+  el.onchange=()=>{obj[key]=el.checked;renderUIPreview();saveEditor();};
+}
+function bindUISettingsControls(){
+  const u=project.ui||defaultUILayout();
+  bindEditorUIRange('uiTbX','uiTbXVal',u.textbox,'x');
+  bindEditorUIRange('uiTbY','uiTbYVal',u.textbox,'y');
+  bindEditorUIRange('uiTbW','uiTbWVal',u.textbox,'w');
+  bindEditorUIRange('uiTbOpacity','uiTbOpacityVal',u.textbox,'opacity');
+  bindEditorUIColor('uiTbBg',u.textbox,'bg');
+  bindEditorUIColor('uiTbBorder',u.textbox,'border');
+  bindEditorUIRange('uiTbRadius','uiTbRadiusVal',u.textbox,'radius');
+  bindEditorUIColor('uiTbFontColor',u.textbox,'fontColor');
+  bindEditorUIRange('uiTbFontSize','uiTbFontSizeVal',u.textbox,'fontSize');
+  bindEditorUIRange('uiTbLineHeight','uiTbLineHeightVal',u.textbox,'lineHeight');
+  bindEditorUICheck('uiTbShow',u.textbox,'show');
+  bindEditorUIRange('uiSpX','uiSpXVal',u.speaker,'offsetX');
+  bindEditorUIRange('uiSpY','uiSpYVal',u.speaker,'offsetY');
+  bindEditorUIRange('uiSpScale','uiSpScaleVal',u.speaker,'scale');
+  bindEditorUIColor('uiSpBg',u.speaker,'bg');
+  bindEditorUIColor('uiSpColor',u.speaker,'color');
+  bindEditorUIRange('uiSpRadius','uiSpRadiusVal',u.speaker,'radius');
+  bindEditorUIRange('uiSpFontSize','uiSpFontSizeVal',u.speaker,'fontSize');
+  bindEditorUICheck('uiSpShow',u.speaker,'show');
+  bindEditorUIRange('uiChX','uiChXVal',u.choices,'x');
+  bindEditorUIRange('uiChY','uiChYVal',u.choices,'y');
+  bindEditorUIRange('uiChW','uiChWVal',u.choices,'w');
+  bindEditorUIRange('uiChOpacity','uiChOpacityVal',u.choices,'opacity');
+  bindEditorUIColor('uiChBg',u.choices,'bg');
+  bindEditorUIColor('uiChBorder',u.choices,'border');
+  bindEditorUIColor('uiChColor',u.choices,'color');
+  bindEditorUIRange('uiChRadius','uiChRadiusVal',u.choices,'radius');
+  bindEditorUIRange('uiChFontSize','uiChFontSizeVal',u.choices,'fontSize');
+  bindEditorUICheck('uiChShow',u.choices,'show');
+  bindEditorUICheck('uiHintShow',u.hint,'show');
+  $$('#uiSettingsBody [data-uireset]').forEach(btn=>{btn.onclick=()=>resetUIComponent(btn.dataset.uireset);});
+}
+function renderUISettings(){
+  const body=$('#uiSettingsBody');if(!body)return;
+  body.innerHTML=uiSettingsHTML();
+  bindUISettingsControls();
+}
+function applyUIPreset(name){
+  const preset=(UI_PRESETS[name]||UI_PRESETS.default)();
+  project.ui=deepClone(preset);
+  renderUISettings();renderUIPreview();saveEditor();
+  toast('UI 预设已应用');
+}
+function resetUIComponent(part){
+  const def=defaultUILayout();
+  if(!project.ui)project.ui=defaultUILayout();
+  project.ui[part]=deepClone(def[part]);
+  renderUISettings();renderUIPreview();saveEditor();
+  toast('已重置该组件');
+}
+function resetAllUI(){
+  project.ui=defaultUILayout();
+  renderUISettings();renderUIPreview();saveEditor();
+  toast('已恢复默认 UI 设置');
+}
+function openUIModal(){
+  if(!project.ui)project.ui=defaultUILayout();
+  renderUISettings();renderUIPreview();
+  $('#uiModal').classList.remove('hidden');
+}
+function closeUIModal(){saveEditor();$('#uiModal').classList.add('hidden');}
+
 function renderAiCharSels(){
   const target=$('#aiImgTarget').value;
   const charSel=$('#aiCharSel'),actSel=$('#aiActSel');
@@ -2074,6 +2255,10 @@ function initEditorEvents(){
     renderCharModule();saveEditor();toast('已新建人物');
   };
   $('#btnCharModuleClose').onclick=()=>{$('#charModal').classList.add('hidden');saveEditor();};
+  $('#btnUiSettings').onclick=openUIModal;
+  $('#btnUiClose').onclick=closeUIModal;
+  $('#btnUiResetAll').onclick=resetAllUI;
+  $$('#uiPresets [data-uipreset]').forEach(btn=>{btn.onclick=()=>applyUIPreset(btn.dataset.uipreset);});
   $('#btnAi').onclick=openAiModal;
   $('#btnAiClose').onclick=closeAiModal;
   $('#btnAiGenImage').onclick=aiGenerateImage;
@@ -2083,7 +2268,7 @@ function initEditorEvents(){
   $('#aiImgTarget').addEventListener('change',renderAiCharSels);
   $('#aiCharSel').addEventListener('change',renderAiCharSels);
   ['aiImageBaseUrl','aiImageKey','aiImageModel','aiImagePath','aiImageFormat','aiImageSize','aiVideoBaseUrl','aiVideoKey','aiVideoModel','aiVideoPath','aiVideoSize','aiTextBaseUrl','aiTextKey','aiTextModel','aiTextPath'].forEach(id=>{const el=$('#'+id);if(el){el.addEventListener('input',saveAiSettings);el.addEventListener('change',saveAiSettings);}});
-  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('#aiModal').classList.contains('hidden')){closeAiModal();}else if(!$('#flagsModal').classList.contains('hidden')){applyFlagsModal();$('#flagsModal').classList.add('hidden');}else if(!$('#charModal').classList.contains('hidden')){$('#charModal').classList.add('hidden');saveEditor();}});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('#uiModal').classList.contains('hidden')){closeUIModal();}else if(!$('#aiModal').classList.contains('hidden')){closeAiModal();}else if(!$('#flagsModal').classList.contains('hidden')){applyFlagsModal();$('#flagsModal').classList.add('hidden');}else if(!$('#charModal').classList.contains('hidden')){$('#charModal').classList.add('hidden');saveEditor();}});
   $('#btnFlags').onclick=()=>{renderFlagsModal();$('#flagsModal').classList.remove('hidden');};
   $('#btnAddFlag').onclick=()=>{const row=document.createElement('div');row.className='flag-list-row';row.innerHTML=`<input type="text" data-fidx="-1" data-frole="name" placeholder="新数值名"><input type="number" step="any" data-fidx="-1" data-frole="val" value="0"><button class="mini danger" data-frole="del">✕</button>`;$('#flagsList').appendChild(row);};
   $('#flagsList').addEventListener('click',e=>{const btn=e.target.closest('button[data-frole=del]');if(btn)btn.closest('.flag-list-row').remove();});
